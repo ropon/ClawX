@@ -2,7 +2,7 @@
  * Provider Types & UI Metadata — single source of truth for the frontend.
  *
  * NOTE: When adding a new provider type, also update
- * electron/utils/provider-registry.ts (env vars, models, configs).
+ * src-tauri/src/providers.rs (env vars, models, configs).
  */
 
 export const PROVIDER_TYPES = [
@@ -10,6 +10,8 @@ export const PROVIDER_TYPES = [
   'openai',
   'google',
   'openrouter',
+  'deepseek',
+  'qwen',
   'moonshot',
   'siliconflow',
   'ollama',
@@ -61,9 +63,11 @@ export const PROVIDER_TYPE_INFO: ProviderTypeInfo[] = [
   { id: 'openai', name: 'OpenAI', icon: '💚', placeholder: 'sk-proj-...', model: 'GPT', requiresApiKey: true },
   { id: 'google', name: 'Google', icon: '🔷', placeholder: 'AIza...', model: 'Gemini', requiresApiKey: true },
   { id: 'openrouter', name: 'OpenRouter', icon: '🌐', placeholder: 'sk-or-v1-...', model: 'Multi-Model', requiresApiKey: true },
+  { id: 'deepseek', name: 'DeepSeek', icon: '🔍', placeholder: 'sk-...', model: 'DeepSeek', requiresApiKey: true, defaultBaseUrl: 'https://api.deepseek.com', defaultModelId: 'deepseek-chat' },
+  { id: 'qwen', name: 'Qwen (CN)', icon: '🔮', placeholder: 'sk-...', model: 'Qwen', requiresApiKey: true, defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', defaultModelId: 'qwen-plus' },
   { id: 'moonshot', name: 'Moonshot (CN)', icon: '🌙', placeholder: 'sk-...', model: 'Kimi', requiresApiKey: true, defaultBaseUrl: 'https://api.moonshot.cn/v1', defaultModelId: 'kimi-k2.5' },
   { id: 'siliconflow', name: 'SiliconFlow (CN)', icon: '🌊', placeholder: 'sk-...', model: 'Multi-Model', requiresApiKey: true, defaultBaseUrl: 'https://api.siliconflow.cn/v1', defaultModelId: 'Pro/moonshotai/Kimi-K2.5' },
-  { id: 'ollama', name: 'Ollama', icon: '🦙', placeholder: 'Not required', requiresApiKey: false, defaultBaseUrl: 'http://localhost:11434', showBaseUrl: true, showModelId: true, modelIdPlaceholder: 'qwen3:latest' },
+  { id: 'ollama', name: 'Ollama (Local)', icon: '🦙', placeholder: 'Not required', requiresApiKey: false, defaultBaseUrl: 'http://localhost:11434', showBaseUrl: true, showModelId: true, modelIdPlaceholder: 'llama3.2:latest', defaultModelId: 'llama3.2:latest' },
   { id: 'custom', name: 'Custom', icon: '⚙️', placeholder: 'API key...', requiresApiKey: true, showBaseUrl: true, showModelId: true, modelIdPlaceholder: 'your-provider/model-id' },
 ];
 
@@ -72,9 +76,11 @@ export function getProviderIconUrl(type: ProviderType | string): string | undefi
   return providerIcons[type];
 }
 
-/** Whether a provider's logo needs CSS invert in dark mode (all logos are monochrome) */
-export function shouldInvertInDark(_type: ProviderType | string): boolean {
-  return true;
+/** Whether a provider's logo needs CSS invert in dark mode */
+export function shouldInvertInDark(type: ProviderType | string): boolean {
+  // Providers with colorful/filled SVG logos don't need invert
+  const noInvert = new Set(['deepseek', 'qwen', 'ollama']);
+  return !noInvert.has(type);
 }
 
 /** Provider list shown in the Setup wizard */

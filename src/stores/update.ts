@@ -1,6 +1,6 @@
 /**
  * Update State Store
- * Manages application update state
+ * Manages application update state via @tauri-apps/plugin-updater
  */
 import { create } from 'zustand';
 import { useSettingsStore } from './settings';
@@ -19,7 +19,7 @@ export interface ProgressInfo {
   bytesPerSecond: number;
 }
 
-export type UpdateStatus = 
+export type UpdateStatus =
   | 'idle'
   | 'checking'
   | 'available'
@@ -46,6 +46,9 @@ interface UpdateState {
   clearError: () => void;
 }
 
+// Cache the pending Update object between check and download/install
+let _pendingUpdate: Awaited<ReturnType<typeof import('@tauri-apps/plugin-updater').check>> = null;
+
 export const useUpdateStore = create<UpdateState>((set, get) => ({
   status: 'idle',
   currentVersion: '0.0.0',
@@ -57,143 +60,124 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
   init: async () => {
     if (get().isInitialized) return;
 
-    // Get current version
+    // Get current version via Tauri API
     try {
-      const version = await window.electron.ipcRenderer.invoke('update:version');
-      set({ currentVersion: version as string });
+      const { getVersion } = await import('@tauri-apps/api/app');
+      const version = await getVersion();
+      set({ currentVersion: version });
     } catch (error) {
       console.error('Failed to get version:', error);
     }
 
-    // Get current status
-    try {
-      const status = await window.electron.ipcRenderer.invoke('update:status') as {
-        status: UpdateStatus;
-        info?: UpdateInfo;
-        progress?: ProgressInfo;
-        error?: string;
-      };
-      set({
-        status: status.status,
-        updateInfo: status.info || null,
-        progress: status.progress || null,
-        error: status.error || null,
-      });
-    } catch (error) {
-      console.error('Failed to get update status:', error);
-    }
-
-    // Listen for update events
-    // Single source of truth: listen only to update:status-changed
-    // (sent by AppUpdater.updateStatus() in the main process)
-    window.electron.ipcRenderer.on('update:status-changed', (data) => {
-      const status = data as {
-        status: UpdateStatus;
-        info?: UpdateInfo;
-        progress?: ProgressInfo;
-        error?: string;
-      };
-      set({
-        status: status.status,
-        updateInfo: status.info || null,
-        progress: status.progress || null,
-        error: status.error || null,
-      });
-    });
-
     set({ isInitialized: true });
 
-    // Apply persisted settings from the settings store
-    const { autoCheckUpdate, autoDownloadUpdate } = useSettingsStore.getState();
-
-    // Sync auto-download preference to the main process
-    if (autoDownloadUpdate) {
-      window.electron.ipcRenderer.invoke('update:setAutoDownload', true).catch(() => {});
-    }
-
     // Auto-check for updates on startup (respects user toggle)
+    const { autoCheckUpdate } = useSettingsStore.getState();
     if (autoCheckUpdate) {
       setTimeout(() => {
-        get().checkForUpdates().catch(() => {});
+        get().checkForUpdates().catch((err) => {
+          console.warn('Auto-check for updates failed:', err);
+        });
       }, 10000);
     }
   },
 
   checkForUpdates: async () => {
     set({ status: 'checking', error: null });
-    
+
     try {
-      const result = await Promise.race([
-        window.electron.ipcRenderer.invoke('update:check'),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Update check timed out')), 30000))
-      ]) as {
-        success: boolean;
-        error?: string;
-        status?: {
-          status: UpdateStatus;
-          info?: UpdateInfo;
-          progress?: ProgressInfo;
-          error?: string;
-        };
-      };
-      
-      if (result.status) {
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+
+      if (update) {
+        _pendingUpdate = update;
         set({
-          status: result.status.status,
-          updateInfo: result.status.info || null,
-          progress: result.status.progress || null,
-          error: result.status.error || null,
+          status: 'available',
+          updateInfo: {
+            version: update.version,
+            releaseDate: update.date ?? undefined,
+            releaseNotes: typeof update.body === 'string' ? update.body : null,
+          },
         });
-      } else if (!result.success) {
-        set({ status: 'error', error: result.error || 'Failed to check for updates' });
+
+        // Auto-download if enabled
+        const { autoDownloadUpdate } = useSettingsStore.getState();
+        if (autoDownloadUpdate) {
+          get().downloadUpdate().catch((err) => {
+            console.warn('Auto-download update failed:', err);
+          });
+        }
+      } else {
+        set({ status: 'not-available' });
       }
     } catch (error) {
-      set({ status: 'error', error: String(error) });
-    } finally {
-      // In dev mode autoUpdater skips without emitting events, so the
-      // status may still be 'checking' or even 'idle'. Catch both.
-      const currentStatus = get().status;
-      if (currentStatus === 'checking' || currentStatus === 'idle') {
-        set({ status: 'error', error: 'Update check completed without a result. This usually means the app is running in dev mode.' });
+      const msg = String(error);
+      // In dev mode, the updater may not be configured
+      if (msg.includes('no updater') || msg.includes('not configured')) {
+        set({ status: 'error', error: 'Updater not available in dev mode' });
+      } else {
+        set({ status: 'error', error: msg });
       }
     }
   },
 
   downloadUpdate: async () => {
+    if (!_pendingUpdate) {
+      set({ status: 'error', error: 'No update available to download' });
+      return;
+    }
+
     set({ status: 'downloading', error: null });
-    
+
     try {
-      const result = await window.electron.ipcRenderer.invoke('update:download') as {
-        success: boolean;
-        error?: string;
-      };
-      
-      if (!result.success) {
-        set({ status: 'error', error: result.error || 'Failed to download update' });
-      }
+      let totalBytes = 0;
+      let transferredBytes = 0;
+
+      await _pendingUpdate.downloadAndInstall((event) => {
+        if (event.event === 'Started' && event.data.contentLength) {
+          totalBytes = event.data.contentLength;
+        } else if (event.event === 'Progress') {
+          transferredBytes += event.data.chunkLength;
+          const percent = totalBytes > 0 ? (transferredBytes / totalBytes) * 100 : 0;
+          set({
+            progress: {
+              total: totalBytes,
+              delta: event.data.chunkLength,
+              transferred: transferredBytes,
+              percent,
+              bytesPerSecond: 0,
+            },
+          });
+        } else if (event.event === 'Finished') {
+          set({ status: 'downloaded', progress: null });
+        }
+      });
+
+      // downloadAndInstall will restart the app on success
     } catch (error) {
       set({ status: 'error', error: String(error) });
     }
   },
 
   installUpdate: () => {
-    window.electron.ipcRenderer.invoke('update:install');
-  },
-
-  setChannel: async (channel) => {
-    try {
-      await window.electron.ipcRenderer.invoke('update:setChannel', channel);
-    } catch (error) {
-      console.error('Failed to set update channel:', error);
+    // downloadAndInstall handles both download + install in Tauri 2
+    // If already downloaded, re-trigger
+    if (_pendingUpdate) {
+      get().downloadUpdate().catch((err) => {
+        console.warn('Install update failed:', err);
+      });
     }
   },
 
-  setAutoDownload: async (enable) => {
-    try {
-      await window.electron.ipcRenderer.invoke('update:setAutoDownload', enable);
-    } catch (error) {
-      console.error('Failed to set auto-download:', error);
-    }
+  setChannel: async (_channel) => {
+    // Channel management is handled via Tauri updater config (tauri.conf.json endpoints)
+    // No runtime API needed — this is a no-op at runtime
+    console.info('Update channel is configured in tauri.conf.json');
+  },
+
+  setAutoDownload: async (_enable) => {
+    // Auto-download preference is managed by settings store
+    // and checked in checkForUpdates() — no backend call needed
   },
 
   clearError: () => set({ error: null, status: 'idle' }),

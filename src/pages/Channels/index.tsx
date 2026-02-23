@@ -10,7 +10,6 @@ import {
   Trash2,
   Power,
   PowerOff,
-  QrCode,
   Loader2,
   X,
   ExternalLink,
@@ -30,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useChannelsStore } from '@/stores/channels';
 import { useGatewayStore } from '@/stores/gateway';
+import { invoke, on, openExternal } from '@/lib/bridge';
 import { StatusBadge, type Status } from '@/components/common/StatusBadge';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import {
@@ -62,15 +62,15 @@ export function Channels() {
   // Fetch configured channel types from config file
   const fetchConfiguredTypes = useCallback(async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('channel:listConfigured') as {
+      const result = await invoke<{
         success: boolean;
         channels?: string[];
-      };
+      }>('channel:listConfigured');
       if (result.success && result.channels) {
         setConfiguredTypes(result.channels);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to fetch configured channel types:', err);
     }
   }, []);
 
@@ -80,14 +80,12 @@ export function Channels() {
   }, [fetchConfiguredTypes]);
 
   useEffect(() => {
-    const unsubscribe = window.electron.ipcRenderer.on('gateway:channel-status', () => {
+    const unsubscribe = on('gateway:channel-status', () => {
       fetchChannels();
       fetchConfiguredTypes();
     });
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      unsubscribe();
     };
   }, [fetchChannels, fetchConfiguredTypes]);
 
@@ -346,7 +344,6 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
   const [channelName, setChannelName] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [qrCode, setQrCode] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [isExistingConfig, setIsExistingConfig] = useState(false);
@@ -366,8 +363,6 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
       setIsExistingConfig(false);
       setChannelName('');
       setIsExistingConfig(false);
-      // Ensure we clean up any pending QR session if switching away
-      window.electron.ipcRenderer.invoke('channel:cancelWhatsAppQr').catch(() => { });
       return;
     }
 
@@ -376,10 +371,10 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
 
     (async () => {
       try {
-        const result = await window.electron.ipcRenderer.invoke(
+        const result = await invoke<{ success: boolean; values?: Record<string, string> }>(
           'channel:getFormValues',
           selectedType
-        ) as { success: boolean; values?: Record<string, string> };
+        );
 
         if (cancelled) return;
 
@@ -403,64 +398,6 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
     return () => { cancelled = true; };
   }, [selectedType]);
 
-  // Listen for WhatsApp QR events
-  useEffect(() => {
-    if (selectedType !== 'whatsapp') return;
-
-    const onQr = (...args: unknown[]) => {
-      const data = args[0] as { qr: string; raw: string };
-      setQrCode(`data:image/png;base64,${data.qr}`);
-    };
-
-    const onSuccess = async (...args: unknown[]) => {
-      const data = args[0] as { accountId?: string } | undefined;
-      toast.success(t('toast.whatsappConnected'));
-      const accountId = data?.accountId || channelName.trim() || 'default';
-      try {
-        const saveResult = await window.electron.ipcRenderer.invoke(
-          'channel:saveConfig',
-          'whatsapp',
-          { enabled: true }
-        ) as { success?: boolean; error?: string };
-        if (!saveResult?.success) {
-          console.error('Failed to save WhatsApp config:', saveResult?.error);
-        } else {
-          console.info('Saved WhatsApp config for account:', accountId);
-        }
-      } catch (error) {
-        console.error('Failed to save WhatsApp config:', error);
-      }
-      // Register the channel locally so it shows up immediately
-      addChannel({
-        type: 'whatsapp',
-        name: channelName || 'WhatsApp',
-      }).then(() => {
-        // Restart gateway to pick up the new session
-        window.electron.ipcRenderer.invoke('gateway:restart').catch(console.error);
-        onChannelAdded();
-      });
-    };
-
-    const onError = (...args: unknown[]) => {
-      const err = args[0] as string;
-      console.error('WhatsApp Login Error:', err);
-      toast.error(t('toast.whatsappFailed', { error: err }));
-      setQrCode(null);
-      setConnecting(false);
-    };
-
-    const removeQrListener = window.electron.ipcRenderer.on('channel:whatsapp-qr', onQr);
-    const removeSuccessListener = window.electron.ipcRenderer.on('channel:whatsapp-success', onSuccess);
-    const removeErrorListener = window.electron.ipcRenderer.on('channel:whatsapp-error', onError);
-
-    return () => {
-      if (typeof removeQrListener === 'function') removeQrListener();
-      if (typeof removeSuccessListener === 'function') removeSuccessListener();
-      if (typeof removeErrorListener === 'function') removeErrorListener();
-      // Cancel when unmounting or switching types
-      window.electron.ipcRenderer.invoke('channel:cancelWhatsAppQr').catch(() => { });
-    };
-  }, [selectedType, addChannel, channelName, onChannelAdded, t]);
 
   const handleValidate = async () => {
     if (!selectedType) return;
@@ -469,17 +406,17 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
     setValidationResult(null);
 
     try {
-      const result = await window.electron.ipcRenderer.invoke(
-        'channel:validateCredentials',
-        selectedType,
-        configValues
-      ) as {
+      const result = await invoke<{
         success: boolean;
         valid?: boolean;
         errors?: string[];
         warnings?: string[];
         details?: Record<string, string>;
-      };
+      }>(
+        'channel:validateCredentials',
+        selectedType,
+        configValues
+      );
 
       const warnings = result.warnings || [];
       if (result.valid && result.details) {
@@ -513,27 +450,19 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
     setValidationResult(null);
 
     try {
-      // For QR-based channels, request QR code
-      if (meta.connectionType === 'qr') {
-        const accountId = channelName.trim() || 'default';
-        await window.electron.ipcRenderer.invoke('channel:requestWhatsAppQr', accountId);
-        // The QR code will be set via event listener
-        return;
-      }
-
       // Step 1: Validate credentials against the actual service API
       if (meta.connectionType === 'token') {
-        const validationResponse = await window.electron.ipcRenderer.invoke(
-          'channel:validateCredentials',
-          selectedType,
-          configValues
-        ) as {
+        const validationResponse = await invoke<{
           success: boolean;
           valid?: boolean;
           errors?: string[];
           warnings?: string[];
           details?: Record<string, string>;
-        };
+        }>(
+          'channel:validateCredentials',
+          selectedType,
+          configValues
+        );
 
         if (!validationResponse.valid) {
           setValidationResult({
@@ -570,7 +499,7 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
 
       // Step 2: Save channel configuration via IPC
       const config: Record<string, unknown> = { ...configValues };
-      await window.electron.ipcRenderer.invoke('channel:saveConfig', selectedType, config);
+      await invoke('channel:saveConfig', selectedType, config);
 
       // Step 3: Add a local channel entry for the UI
       await addChannel({
@@ -585,7 +514,7 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
       // The Gateway watches the config file, but a restart ensures a clean start
       // especially when adding a channel for the first time.
       try {
-        await window.electron.ipcRenderer.invoke('gateway:restart');
+        await invoke('gateway:restart');
         toast.success(t('toast.channelConnecting', { name: meta.name }));
       } catch (restartError) {
         console.warn('Gateway restart after channel config:', restartError);
@@ -601,19 +530,13 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
     }
   };
 
-  const openDocs = () => {
+  const openDocs = async () => {
     if (meta?.docsUrl) {
       const url = t(meta.docsUrl);
       try {
-        if (window.electron?.openExternal) {
-          window.electron.openExternal(url);
-        } else {
-          // Fallback: open in new window
-          window.open(url, '_blank');
-        }
+        await openExternal(url);
       } catch (error) {
         console.error('Failed to open docs:', error);
-        // Fallback: open in new window
         window.open(url, '_blank');
       }
     }
@@ -674,35 +597,11 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
                     <span className="text-3xl">{channelMeta.icon}</span>
                     <p className="font-medium mt-2">{channelMeta.name}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {channelMeta.connectionType === 'qr' ? t('dialog.qrCode') : t('dialog.token')}
+                      {t('dialog.token')}
                     </p>
                   </button>
                 );
               })}
-            </div>
-          ) : qrCode ? (
-            // QR Code display
-            <div className="text-center space-y-4">
-              <div className="bg-white p-4 rounded-lg inline-block shadow-sm border">
-                {qrCode.startsWith('data:image') ? (
-                  <img src={qrCode} alt="Scan QR Code" className="w-64 h-64 object-contain" />
-                ) : (
-                  <div className="w-64 h-64 bg-gray-100 flex items-center justify-center">
-                    <QrCode className="h-32 w-32 text-gray-400" />
-                  </div>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {t('dialog.scanQR', { name: meta?.name })}
-              </p>
-              <div className="flex justify-center gap-2">
-                <Button variant="outline" onClick={() => {
-                  setQrCode(null);
-                  handleConnect(); // Retry
-                }}>
-                  {t('dialog.refreshCode')}
-                </Button>
-              </div>
             </div>
           ) : loadingConfig ? (
             // Loading saved config
@@ -842,10 +741,8 @@ function AddChannelDialog({ selectedType, onSelectType, onClose, onChannelAdded 
                     {connecting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {meta?.connectionType === 'qr' ? t('dialog.generatingQR') : t('dialog.validatingAndSaving')}
+                        {t('dialog.validatingAndSaving')}
                       </>
-                    ) : meta?.connectionType === 'qr' ? (
-                      t('dialog.generateQRCode')
                     ) : (
                       <>
                         <Check className="h-4 w-4 mr-2" />

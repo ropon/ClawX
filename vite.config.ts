@@ -1,51 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import electron from 'vite-plugin-electron';
-import renderer from 'vite-plugin-electron-renderer';
 import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    electron([
-      {
-        // Main process entry file
-        entry: 'electron/main/index.ts',
-        onstart(options) {
-          options.startup();
-        },
-        vite: {
-          build: {
-            outDir: 'dist-electron/main',
-            rollupOptions: {
-              external: ['electron', 'electron-store', 'electron-updater', 'ws'],
-            },
-          },
-        },
-      },
-      {
-        // Preload scripts entry file
-        entry: 'electron/preload/index.ts',
-        onstart(options) {
-          options.reload();
-        },
-        vite: {
-          build: {
-            outDir: 'dist-electron/preload',
-            rollupOptions: {
-              external: ['electron'],
-            },
-          },
-        },
-      },
-    ]),
-    renderer(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@electron': resolve(__dirname, 'electron'),
     },
   },
   server: {
@@ -54,5 +16,34 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-progress',
+            '@radix-ui/react-label',
+            '@radix-ui/react-radio-group',
+            '@radix-ui/react-slot',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+            'lucide-react',
+          ],
+          'vendor-xyflow': ['@xyflow/react'],
+          'vendor-i18n': ['i18next', 'react-i18next'],
+          'vendor-markdown': ['react-markdown', 'remark-gfm'],
+          'vendor-motion': ['framer-motion'],
+        },
+      },
+    },
   },
 });

@@ -12,7 +12,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "outDir": "dist-electron",
     "declaration": true,
 
     /* Linting */
@@ -22,10 +21,7 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Paths */
-    "baseUrl": ".",
-    "paths": {
-      "@electron/*": ["electron/*"]
-    }
+    "baseUrl": "."
   },
-  "include": ["electron", "vite.config.ts"]
+  "include": ["vite.config.ts"]
 }

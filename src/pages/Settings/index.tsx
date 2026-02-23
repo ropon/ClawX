@@ -2,7 +2,7 @@
  * Settings Page
  * Application configuration
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Sun,
   Moon,
@@ -14,6 +14,9 @@ import {
   Download,
   Copy,
   FileText,
+  Zap,
+  Keyboard,
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +29,7 @@ import { toast } from 'sonner';
 import { useSettingsStore } from '@/stores/settings';
 import { useGatewayStore } from '@/stores/gateway';
 import { useUpdateStore } from '@/stores/update';
+import { invoke, openExternal, showItemInFolder, getPlatform, getIsDev } from '@/lib/bridge';
 import { ProvidersSettings } from '@/components/settings/ProvidersSettings';
 import { UpdateSettings } from '@/components/settings/UpdateSettings';
 import { useTranslation } from 'react-i18next';
@@ -43,12 +47,16 @@ export function Settings() {
     setTheme,
     language,
     setLanguage,
+    launchAtStartup,
+    setLaunchAtStartup,
     gatewayAutoStart,
     setGatewayAutoStart,
     autoCheckUpdate,
     setAutoCheckUpdate,
     autoDownloadUpdate,
     setAutoDownloadUpdate,
+    enableNotifications,
+    setEnableNotifications,
     devModeUnlocked,
     setDevModeUnlocked,
   } = useSettingsStore();
@@ -61,17 +69,85 @@ export function Settings() {
   const [openclawCliError, setOpenclawCliError] = useState<string | null>(null);
   const [installingCli, setInstallingCli] = useState(false);
 
-  const isMac = window.electron.platform === 'darwin';
-  const isWindows = window.electron.platform === 'win32';
-  const isLinux = window.electron.platform === 'linux';
-  const isDev = window.electron.isDev;
+  // Spotlight shortcut
+  const [currentShortcut, setCurrentShortcut] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    invoke<{ spotlight: string }>('shortcut:get').then((config) => {
+      setCurrentShortcut(config.spotlight);
+    });
+  }, []);
+
+  const handleKeyRecording = useCallback((e: KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Build accelerator string from the event
+    const parts: string[] = [];
+    if (e.ctrlKey || e.metaKey) parts.push('CommandOrControl');
+    if (e.altKey) parts.push('Alt');
+    if (e.shiftKey) parts.push('Shift');
+
+    const key = e.key;
+    // Only accept non-modifier keys
+    if (['Control', 'Meta', 'Alt', 'Shift'].includes(key)) return;
+
+    // Map special keys
+    const keyMap: Record<string, string> = {
+      ' ': 'Space',
+      'ArrowUp': 'Up',
+      'ArrowDown': 'Down',
+      'ArrowLeft': 'Left',
+      'ArrowRight': 'Right',
+      'Escape': 'Escape',
+    };
+    const mappedKey = keyMap[key] || (key.length === 1 ? key.toUpperCase() : key);
+
+    if (mappedKey === 'Escape' && parts.length === 0) {
+      // Plain Escape cancels recording
+      setIsRecording(false);
+      return;
+    }
+
+    parts.push(mappedKey);
+    const accelerator = parts.join('+');
+
+    // Must have at least one modifier
+    if (parts.length < 2) return;
+
+    setIsRecording(false);
+
+    // Try to update the shortcut
+    invoke<{ success: boolean; error?: string }>('shortcut:update', { config: { spotlight: accelerator } }).then((r) => {
+      if (r.success) {
+        setCurrentShortcut(accelerator);
+        toast.success(`Shortcut updated to ${accelerator}`);
+      } else {
+        toast.error(r.error || 'Failed to update shortcut');
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isRecording) {
+      window.addEventListener('keydown', handleKeyRecording, true);
+      return () => window.removeEventListener('keydown', handleKeyRecording, true);
+    }
+  }, [isRecording, handleKeyRecording]);
+
+  const platform = getPlatform();
+  const isMac = platform === 'darwin';
+  const isWindows = platform === 'win32';
+  const isLinux = platform === 'linux';
+  const isDev = getIsDev();
   const showCliTools = isMac || isWindows || isLinux;
   const [showLogs, setShowLogs] = useState(false);
   const [logContent, setLogContent] = useState('');
 
   const handleShowLogs = async () => {
     try {
-      const logs = await window.electron.ipcRenderer.invoke('log:readFile', 100) as string;
+      const logs = await invoke<string>('log:readFile', 100);
       setLogContent(logs);
       setShowLogs(true);
     } catch {
@@ -82,28 +158,28 @@ export function Settings() {
 
   const handleOpenLogDir = async () => {
     try {
-      const logDir = await window.electron.ipcRenderer.invoke('log:getDir') as string;
+      const logDir = await invoke<string>('log:getDir');
       if (logDir) {
-        await window.electron.ipcRenderer.invoke('shell:showItemInFolder', logDir);
+        await showItemInFolder(logDir);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to open log directory:', err);
     }
   };
 
   // Open developer console
   const openDevConsole = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('gateway:getControlUiUrl') as {
+      const result = await invoke<{
         success: boolean;
         url?: string;
         token?: string;
         port?: number;
         error?: string;
-      };
+      }>('gateway:getControlUiUrl');
       if (result.success && result.url && result.token && typeof result.port === 'number') {
         setControlUiInfo({ url: result.url, token: result.token, port: result.port });
-        window.electron.openExternal(result.url);
+        openExternal(result.url);
       } else {
         console.error('Failed to get Dev Console URL:', result.error);
       }
@@ -114,12 +190,12 @@ export function Settings() {
 
   const refreshControlUiInfo = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('gateway:getControlUiUrl') as {
+      const result = await invoke<{
         success: boolean;
         url?: string;
         token?: string;
         port?: number;
-      };
+      }>('gateway:getControlUiUrl');
       if (result.success && result.url && result.token && typeof result.port === 'number') {
         setControlUiInfo({ url: result.url, token: result.token, port: result.port });
       }
@@ -144,11 +220,11 @@ export function Settings() {
 
     const loadCliCommand = async () => {
       try {
-        const result = await window.electron.ipcRenderer.invoke('openclaw:getCliCommand') as {
+        const result = await invoke<{
           success: boolean;
           command?: string;
           error?: string;
-        };
+        }>('openclaw:getCliCommand');
         if (cancelled) return;
         if (result.success && result.command) {
           setOpenclawCliCommand(result.command);
@@ -183,7 +259,7 @@ export function Settings() {
   const handleInstallCliCommand = async () => {
     if (!isMac || installingCli) return;
     try {
-      const confirmation = await window.electron.ipcRenderer.invoke('dialog:message', {
+      const confirmation = await invoke<{ response: number }>('dialog:message', {
         type: 'question',
         title: t('developer.installTitle'),
         message: t('developer.installMessage'),
@@ -191,16 +267,16 @@ export function Settings() {
         buttons: ['Cancel', 'Install'],
         defaultId: 1,
         cancelId: 0,
-      }) as { response: number };
+      });
 
       if (confirmation.response !== 1) return;
 
       setInstallingCli(true);
-      const result = await window.electron.ipcRenderer.invoke('openclaw:installCliMac') as {
+      const result = await invoke<{
         success: boolean;
         path?: string;
         error?: string;
-      };
+      }>('openclaw:installCliMac');
 
       if (result.success) {
         toast.success(`Installed command at ${result.path ?? '/usr/local/bin/openclaw'}`);
@@ -360,6 +436,87 @@ export function Settings() {
             <Switch
               checked={gatewayAutoStart}
               onCheckedChange={setGatewayAutoStart}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Desktop Assistant (Spotlight) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            {t('spotlight.title')}
+          </CardTitle>
+          <CardDescription>{t('spotlight.description')}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="flex items-center gap-2">
+                <Keyboard className="h-4 w-4" />
+                {t('spotlight.shortcutLabel')}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {t('spotlight.shortcutDesc')}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={isRecording ? t('spotlight.recording') : (currentShortcut || '')}
+                className="w-[220px] text-center font-mono"
+              />
+              {isRecording ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRecording(false)}
+                >
+                  {t('spotlight.cancelBtn')}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRecording(true)}
+                >
+                  {t('spotlight.recordBtn')}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                {t('spotlight.notificationsLabel')}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {t('spotlight.notificationsDesc')}
+              </p>
+            </div>
+            <Switch
+              checked={enableNotifications}
+              onCheckedChange={setEnableNotifications}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>{t('spotlight.launchAtStartup')}</Label>
+              <p className="text-sm text-muted-foreground">
+                {t('spotlight.launchAtStartupDesc')}
+              </p>
+            </div>
+            <Switch
+              checked={launchAtStartup}
+              onCheckedChange={setLaunchAtStartup}
             />
           </div>
         </CardContent>
@@ -554,14 +711,14 @@ export function Settings() {
             <Button
               variant="link"
               className="h-auto p-0"
-              onClick={() => window.electron.openExternal('https://claw-x.com')}
+              onClick={() => openExternal('https://claw-x.com')}
             >
               {t('about.docs')}
             </Button>
             <Button
               variant="link"
               className="h-auto p-0"
-              onClick={() => window.electron.openExternal('https://github.com/ValueCell-ai/ClawX')}
+              onClick={() => openExternal('https://github.com/ValueCell-ai/ClawX')}
             >
               {t('about.github')}
             </Button>

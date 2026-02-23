@@ -1,0 +1,92 @@
+{
+  "input": {
+    "placeholder": "问我任何问题... (Esc 关闭)"
+  },
+  "clipboard": {
+    "text": "文本",
+    "url": "链接",
+    "code": "代码",
+    "image": "图片"
+  },
+  "actions": {
+    "translate": "翻译",
+    "summarize": "摘要",
+    "explain": "解释",
+    "review": "代码审查",
+    "explainCode": "解释代码",
+    "optimize": "优化",
+    "summarizePage": "摘要页面",
+    "describe": "描述"
+  },
+  "response": {
+    "thinking": "思考中...",
+    "copy": "复制",
+    "copied": "已复制！"
+  },
+  "screenshot": {
+    "capture": "截取屏幕",
+    "attached": "已附加截图",
+    "permissionDenied": "需要屏幕录制权限",
+    "analyzeThis": "描述这张截图... (按 Enter 发送)"
+  },
+  "error": {
+    "gatewayNotRunning": "Gateway 未运行，请先从主窗口启动。"
+  },
+  "commands": {
+    "categories": {
+      "general": "通用",
+      "code": "代码",
+      "writing": "写作",
+      "analysis": "分析"
+    },
+    "translate": {
+      "name": "翻译",
+      "description": "翻译剪贴板文本"
+    },
+    "translateTo": {
+      "name": "翻译为",
+      "description": "翻译为指定语言",
+      "inputPlaceholder": "目标语言，如 日语..."
+    },
+    "summarize": {
+      "name": "摘要",
+      "description": "概括剪贴板内容"
+    },
+    "explain": {
+      "name": "解释",
+      "description": "用简单的语言解释"
+    },
+    "review": {
+      "name": "代码审查",
+      "description": "审查代码中的问题和改进建议"
+    },
+    "explainCode": {
+      "name": "解释代码",
+      "description": "逐步解释代码"
+    },
+    "optimize": {
+      "name": "优化代码",
+      "description": "优化代码性能和可读性"
+    },
+    "rewrite": {
+      "name": "改写",
+      "description": "按指定风格改写文本",
+      "inputPlaceholder": "风格，如 正式、口语化..."
+    },
+    "fixGrammar": {
+      "name": "修正语法",
+      "description": "修正语法和拼写错误"
+    },
+    "ask": {
+      "name": "提问",
+      "description": "通用提问",
+      "inputPlaceholder": "输入你的问题..."
+    }
+  },
+  "fileSearch": {
+    "attachFile": "附加文件",
+    "searching": "正在搜索文件...",
+    "noResults": "未找到文件",
+    "hint": "输入至少 2 个字符开始搜索..."
+  }
+}

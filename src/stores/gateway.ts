@@ -3,7 +3,8 @@
  * Manages Gateway connection state and communication
  */
 import { create } from 'zustand';
-import type { GatewayStatus } from '../types/gateway';
+import { invoke, on } from '@/lib/bridge';
+import type { GatewayStatus, GatewayStartupProgress } from '../types/gateway';
 
 let gatewayInitPromise: Promise<void> | null = null;
 
@@ -18,9 +19,12 @@ interface GatewayState {
   health: GatewayHealth | null;
   isInitialized: boolean;
   lastError: string | null;
+  startupProgress: GatewayStartupProgress | null;
+  _cleanups: Array<() => void>;
 
   // Actions
   init: () => Promise<void>;
+  destroy: () => void;
   start: () => Promise<void>;
   stop: () => Promise<void>;
   restart: () => Promise<void>;
@@ -38,6 +42,8 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
   health: null,
   isInitialized: false,
   lastError: null,
+  startupProgress: null,
+  _cleanups: [],
 
   init: async () => {
     if (get().isInitialized) return;
@@ -47,26 +53,32 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
     }
 
     gatewayInitPromise = (async () => {
+      const cleanups: Array<() => void> = [];
       try {
-        // Get initial status first
-        const status = await window.electron.ipcRenderer.invoke('gateway:status') as GatewayStatus;
-        set({ status, isInitialized: true });
-
-        // Listen for status changes
-        window.electron.ipcRenderer.on('gateway:status-changed', (newStatus) => {
+        // Register all event listeners FIRST — before any async operations
+        // that could trigger events. This prevents race conditions with
+        // non-blocking gateway:start which emits events from a background task.
+        cleanups.push(on('gateway:status-changed', (newStatus) => {
           set({ status: newStatus as GatewayStatus });
-        });
+        }));
 
-        // Listen for errors
-        window.electron.ipcRenderer.on('gateway:error', (error) => {
+        cleanups.push(on('gateway:error', (error) => {
           set({ lastError: String(error) });
-        });
+        }));
+
+        cleanups.push(on('gateway:startup-progress', (data) => {
+          const progress = data as GatewayStartupProgress;
+          set({ startupProgress: progress });
+          if (progress.phase === 'ready') {
+            setTimeout(() => set({ startupProgress: null }), 1500);
+          }
+        }));
 
         // Some Gateway builds stream chat events via generic "agent" notifications.
         // Normalize and forward them to the chat store.
         // The Gateway may put event fields (state, message, etc.) either inside
         // params.data or directly on params — we must handle both layouts.
-        window.electron.ipcRenderer.on('gateway:notification', (notification) => {
+        cleanups.push(on('gateway:notification', (notification) => {
           const payload = notification as { method?: string; params?: Record<string, unknown> } | undefined;
           if (!payload || payload.method !== 'agent' || !payload.params || typeof payload.params !== 'object') {
             return;
@@ -94,13 +106,13 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
             .catch((err) => {
               console.warn('Failed to forward gateway notification event:', err);
             });
-        });
+        }));
 
         // Listen for chat events from the gateway and forward to chat store.
         // The data arrives as { message: payload } from handleProtocolEvent.
         // The payload may be a full event wrapper ({ state, runId, message })
         // or the raw chat message itself. We need to handle both.
-        window.electron.ipcRenderer.on('gateway:chat-message', (data) => {
+        cleanups.push(on('gateway:chat-message', (data) => {
           try {
             // Dynamic import to avoid circular dependency
             import('./chat').then(({ useChatStore }) => {
@@ -129,11 +141,28 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
           } catch (err) {
             console.warn('Failed to forward chat event:', err);
           }
-        });
+        }));
+
+        // Yield to let the async event listener imports resolve before triggering events
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // NOW get initial status and auto-start
+        const status = await invoke('gateway:status') as GatewayStatus;
+        set({ status, isInitialized: true, _cleanups: cleanups });
+
+        // Auto-start Gateway if not running
+        if (status.state === 'stopped' || status.state === 'error') {
+          const { useSettingsStore } = await import('./settings');
+          const gatewayAutoStart = useSettingsStore.getState().gatewayAutoStart;
+          if (gatewayAutoStart) {
+            get().start();
+          }
+        }
 
       } catch (error) {
         console.error('Failed to initialize Gateway:', error);
-        set({ lastError: String(error) });
+        cleanups.forEach(fn => fn());
+        set({ lastError: String(error), _cleanups: [] });
       } finally {
         gatewayInitPromise = null;
       }
@@ -142,17 +171,29 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
     await gatewayInitPromise;
   },
 
+  destroy: () => {
+    const { _cleanups } = get();
+    _cleanups.forEach(fn => fn());
+    set({ _cleanups: [], isInitialized: false });
+    gatewayInitPromise = null;
+  },
+
   start: async () => {
     try {
-      set({ status: { ...get().status, state: 'starting' }, lastError: null });
-      const result = await window.electron.ipcRenderer.invoke('gateway:start') as { success: boolean; error?: string };
+      set({ status: { ...get().status, state: 'starting' }, lastError: null, startupProgress: null });
+      const result = await invoke('gateway:start') as { success: boolean; state?: string; error?: string };
 
+      // Non-blocking: if state is "starting", the backend will send progress events
+      // If state is "running", gateway was already running
       if (!result.success) {
         set({
           status: { ...get().status, state: 'error', error: result.error },
           lastError: result.error || 'Failed to start Gateway'
         });
+      } else if (result.state === 'running') {
+        set({ status: { ...get().status, state: 'running' } });
       }
+      // state === 'starting' → UI updates via gateway:startup-progress events
     } catch (error) {
       set({
         status: { ...get().status, state: 'error', error: String(error) },
@@ -163,7 +204,7 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
 
   stop: async () => {
     try {
-      await window.electron.ipcRenderer.invoke('gateway:stop');
+      await invoke('gateway:stop');
       set({ status: { ...get().status, state: 'stopped' }, lastError: null });
     } catch (error) {
       console.error('Failed to stop Gateway:', error);
@@ -173,8 +214,8 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
 
   restart: async () => {
     try {
-      set({ status: { ...get().status, state: 'starting' }, lastError: null });
-      const result = await window.electron.ipcRenderer.invoke('gateway:restart') as { success: boolean; error?: string };
+      set({ status: { ...get().status, state: 'starting' }, lastError: null, startupProgress: null });
+      const result = await invoke('gateway:restart') as { success: boolean; state?: string; error?: string };
 
       if (!result.success) {
         set({
@@ -182,6 +223,7 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
           lastError: result.error || 'Failed to restart Gateway'
         });
       }
+      // Non-blocking: progress events will update the UI
     } catch (error) {
       set({
         status: { ...get().status, state: 'error', error: String(error) },
@@ -192,7 +234,7 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
 
   checkHealth: async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('gateway:health') as {
+      const result = await invoke('gateway:health') as {
         success: boolean;
         ok: boolean;
         error?: string;
@@ -215,7 +257,7 @@ export const useGatewayStore = create<GatewayState>((set, get) => ({
   },
 
   rpc: async <T>(method: string, params?: unknown, timeoutMs?: number): Promise<T> => {
-    const result = await window.electron.ipcRenderer.invoke('gateway:rpc', method, params, timeoutMs) as {
+    const result = await invoke('gateway:rpc', method, params, timeoutMs) as {
       success: boolean;
       result?: T;
       error?: string;

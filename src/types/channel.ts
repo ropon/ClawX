@@ -1,13 +1,12 @@
 /**
  * Channel Type Definitions
- * Types for messaging channels (WhatsApp, Telegram, etc.)
+ * Types for messaging channels (Telegram, Discord, etc.)
  */
 
 /**
  * Supported channel types
  */
 export type ChannelType =
-  | 'whatsapp'
   | 'telegram'
   | 'discord'
   | 'signal'
@@ -77,7 +76,6 @@ export interface ChannelMeta {
  * Channel icons mapping
  */
 export const CHANNEL_ICONS: Record<ChannelType, string> = {
-  whatsapp: '📱',
   telegram: '✈️',
   discord: '🎮',
   signal: '🔒',
@@ -94,7 +92,6 @@ export const CHANNEL_ICONS: Record<ChannelType, string> = {
  * Channel display names
  */
 export const CHANNEL_NAMES: Record<ChannelType, string> = {
-  whatsapp: 'WhatsApp',
   telegram: 'Telegram',
   discord: 'Discord',
   signal: 'Signal',
@@ -187,21 +184,6 @@ export const CHANNEL_META: Record<ChannelType, ChannelMeta> = {
     ],
   },
 
-  whatsapp: {
-    id: 'whatsapp',
-    name: 'WhatsApp',
-    icon: '📱',
-    description: 'channels:meta.whatsapp.description',
-    connectionType: 'qr',
-    docsUrl: 'channels:meta.whatsapp.docsUrl',
-    configFields: [],
-    instructions: [
-      'channels:meta.whatsapp.instructions.0',
-      'channels:meta.whatsapp.instructions.1',
-      'channels:meta.whatsapp.instructions.2',
-      'channels:meta.whatsapp.instructions.3',
-    ],
-  },
   signal: {
     id: 'signal',
     name: 'Signal',
@@ -441,7 +423,7 @@ export const CHANNEL_META: Record<ChannelType, ChannelMeta> = {
  * Get primary supported channels (non-plugin, commonly used)
  */
 export function getPrimaryChannels(): ChannelType[] {
-  return ['telegram', 'discord', 'whatsapp', 'feishu'];
+  return ['telegram', 'discord', 'feishu'];
 }
 
 /**

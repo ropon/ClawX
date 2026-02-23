@@ -9,8 +9,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const ICONS_DIR = path.join(PROJECT_ROOT, 'resources', 'icons');
-const SVG_SOURCE = path.join(ICONS_DIR, 'icon.svg');
+const ICONS_SOURCE_DIR = path.join(PROJECT_ROOT, 'resources', 'icons');
+const ICONS_DIR = path.join(PROJECT_ROOT, 'src-tauri', 'icons');
+const SVG_SOURCE = path.join(ICONS_SOURCE_DIR, 'icon.svg');
 
 echo`🎨 Generating ClawX icons using Node.js...`;
 
@@ -31,7 +32,7 @@ try {
     .png() // Ensure it's PNG
     .toBuffer();
 
-  // Save the main icon.png (typically 512x512 for Electron root icon)
+  // Save the main icon.png (512x512)
   await sharp(masterPngBuffer)
     .resize(512, 512)
     .toFile(path.join(ICONS_DIR, 'icon.png'));
@@ -67,6 +68,12 @@ try {
   // 4. Generate Linux PNGs (various sizes)
   echo`🐧 Generating Linux PNG icons...`;
   const linuxSizes = [16, 32, 48, 64, 128, 256, 512];
+
+  // Generate Tauri-required 128x128@2x (256x256 retina)
+  await sharp(masterPngBuffer)
+    .resize(256, 256)
+    .toFile(path.join(ICONS_DIR, '128x128@2x.png'));
+  echo`  ✅ Created 128x128@2x.png (256x256 retina)`;
   let generatedCount = 0;
   
   for (const size of linuxSizes) {
@@ -79,7 +86,7 @@ try {
 
   // 5. Generate macOS Tray Icon Template
   echo`📍 Generating macOS tray icon template...`;
-  const TRAY_SVG_SOURCE = path.join(ICONS_DIR, 'tray-icon-template.svg');
+  const TRAY_SVG_SOURCE = path.join(ICONS_SOURCE_DIR, 'tray-icon-template.svg');
   
   if (fs.existsSync(TRAY_SVG_SOURCE)) {
     await sharp(TRAY_SVG_SOURCE)

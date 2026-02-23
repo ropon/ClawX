@@ -1,0 +1,89 @@
+{
+    "title": "Agents",
+    "subtitle": "Create and manage AI agent roles with different personas and configurations",
+    "createAgent": "New Agent",
+    "searchPlaceholder": "Search agents...",
+    "empty": {
+        "title": "No Agents Yet",
+        "description": "Create your first AI agent to get started. Each agent can have its own persona, model configuration, and skills.",
+        "cta": "Create First Agent"
+    },
+    "card": {
+        "default": "Default",
+        "skills": "{{count}} skills",
+        "channels": "{{count}} channels",
+        "noDescription": "No description"
+    },
+    "actions": {
+        "edit": "Edit",
+        "clone": "Clone",
+        "delete": "Delete",
+        "setDefault": "Set as Default",
+        "export": "Export",
+        "import": "Import"
+    },
+    "editor": {
+        "createTitle": "Create Agent",
+        "editTitle": "Edit Agent",
+        "basicInfo": "Basic Info",
+        "name": "Name",
+        "namePlaceholder": "e.g. Code Reviewer",
+        "avatar": "Avatar",
+        "description": "Description",
+        "descriptionPlaceholder": "Brief description of this agent's role",
+        "aiConfig": "AI Configuration",
+        "provider": "Provider",
+        "providerDefault": "Default (from settings)",
+        "model": "Model",
+        "modelPlaceholder": "e.g. claude-sonnet-4-20250514",
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens",
+        "maxTokensPlaceholder": "Default",
+        "systemPrompt": "System Prompt",
+        "systemPromptPlaceholder": "Define this agent's persona, behavior, and instructions...",
+        "skills": "Skills",
+        "noSkills": "No skills installed",
+        "knowledgeBases": "Knowledge Bases",
+        "knowledgeBasesDesc": "Select knowledge bases for RAG-enhanced responses",
+        "noKnowledgeBases": "No knowledge bases created. Create one in the Knowledge page.",
+        "channelBindings": "Channel Bindings",
+        "noChannels": "No channels configured. Add channels in the Channels page."
+    },
+    "deleteConfirm": {
+        "title": "Delete Agent",
+        "message": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+    },
+    "toolbar": {
+        "switchAgent": "Switch Agent"
+    },
+    "templates": {
+        "sectionTitle": "Choose a Template",
+        "sectionDesc": "Start with a template or create from scratch",
+        "blankAgent": "Blank Agent",
+        "blankAgentDesc": "Start from scratch with an empty configuration",
+        "translator": {
+            "name": "Translator",
+            "description": "Translate text accurately between languages while preserving tone and nuance"
+        },
+        "coder": {
+            "name": "Software Engineer",
+            "description": "Write clean, efficient code and help with software development tasks"
+        },
+        "writer": {
+            "name": "Writer & Editor",
+            "description": "Craft compelling content, edit writing, and improve clarity"
+        },
+        "analyst": {
+            "name": "Data Analyst",
+            "description": "Analyze data, identify patterns, and derive actionable insights"
+        },
+        "tutor": {
+            "name": "Tutor",
+            "description": "Explain concepts clearly with examples and step-by-step guidance"
+        },
+        "reviewer": {
+            "name": "Code Reviewer",
+            "description": "Review code for bugs, security issues, and best practice adherence"
+        }
+    }
+}

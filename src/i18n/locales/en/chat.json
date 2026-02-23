@@ -14,6 +14,8 @@
         "newSession": "New session",
         "refresh": "Refresh chat",
         "showThinking": "Show thinking",
-        "hideThinking": "Hide thinking"
+        "hideThinking": "Hide thinking",
+        "showAllSessions": "Show all sessions",
+        "filterByAgent": "Filter sessions by agent"
     }
 }

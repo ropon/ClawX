@@ -1,0 +1,115 @@
+/**
+ * Built-in Quick Commands
+ * Predefined commands for the "/" command palette
+ */
+import type { QuickCommand } from '@/types/commands';
+
+export const builtinCommands: QuickCommand[] = [
+  // General
+  {
+    id: 'translate',
+    command: '/translate',
+    nameKey: 'commands.translate.name',
+    descriptionKey: 'commands.translate.description',
+    icon: '🌐',
+    promptTemplate: 'Translate the following text:\n\n{{clipboard}}',
+    requiresInput: false,
+    category: 'general',
+  },
+  {
+    id: 'translate-to',
+    command: '/translate-to',
+    nameKey: 'commands.translateTo.name',
+    descriptionKey: 'commands.translateTo.description',
+    icon: '🔤',
+    promptTemplate: 'Translate the following text to {{input}}:\n\n{{clipboard}}',
+    requiresInput: true,
+    inputPlaceholderKey: 'commands.translateTo.inputPlaceholder',
+    category: 'general',
+  },
+  {
+    id: 'summarize',
+    command: '/summarize',
+    nameKey: 'commands.summarize.name',
+    descriptionKey: 'commands.summarize.description',
+    icon: '📝',
+    promptTemplate: 'Summarize the following content:\n\n{{clipboard}}',
+    requiresInput: false,
+    category: 'general',
+  },
+  {
+    id: 'explain',
+    command: '/explain',
+    nameKey: 'commands.explain.name',
+    descriptionKey: 'commands.explain.description',
+    icon: '💡',
+    promptTemplate: 'Explain the following in simple terms:\n\n{{clipboard}}',
+    requiresInput: false,
+    category: 'general',
+  },
+  // Code
+  {
+    id: 'review',
+    command: '/review',
+    nameKey: 'commands.review.name',
+    descriptionKey: 'commands.review.description',
+    icon: '🔍',
+    promptTemplate: 'Review this code for bugs, improvements, and best practices:\n\n```\n{{clipboard}}\n```',
+    requiresInput: false,
+    category: 'code',
+  },
+  {
+    id: 'explain-code',
+    command: '/explain-code',
+    nameKey: 'commands.explainCode.name',
+    descriptionKey: 'commands.explainCode.description',
+    icon: '📖',
+    promptTemplate: 'Explain this code step by step:\n\n```\n{{clipboard}}\n```',
+    requiresInput: false,
+    category: 'code',
+  },
+  {
+    id: 'optimize',
+    command: '/optimize',
+    nameKey: 'commands.optimize.name',
+    descriptionKey: 'commands.optimize.description',
+    icon: '⚡',
+    promptTemplate: 'Optimize this code for performance and readability:\n\n```\n{{clipboard}}\n```',
+    requiresInput: false,
+    category: 'code',
+  },
+  // Writing
+  {
+    id: 'rewrite',
+    command: '/rewrite',
+    nameKey: 'commands.rewrite.name',
+    descriptionKey: 'commands.rewrite.description',
+    icon: '✏️',
+    promptTemplate: 'Rewrite the following text in a {{input}} style:\n\n{{clipboard}}',
+    requiresInput: true,
+    inputPlaceholderKey: 'commands.rewrite.inputPlaceholder',
+    category: 'writing',
+  },
+  {
+    id: 'fix-grammar',
+    command: '/fix-grammar',
+    nameKey: 'commands.fixGrammar.name',
+    descriptionKey: 'commands.fixGrammar.description',
+    icon: '✅',
+    promptTemplate: 'Fix the grammar, spelling, and punctuation in the following text:\n\n{{clipboard}}',
+    requiresInput: false,
+    category: 'writing',
+  },
+  // Analysis
+  {
+    id: 'ask',
+    command: '/ask',
+    nameKey: 'commands.ask.name',
+    descriptionKey: 'commands.ask.description',
+    icon: '❓',
+    promptTemplate: '{{input}}',
+    requiresInput: true,
+    inputPlaceholderKey: 'commands.ask.inputPlaceholder',
+    category: 'analysis',
+  },
+];

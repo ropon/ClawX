@@ -5,6 +5,9 @@
         "skills": "スキル",
         "channels": "チャンネル",
         "dashboard": "ダッシュボード",
+        "agents": "エージェント",
+        "knowledge": "ナレッジ",
+        "workflows": "ワークフロー",
         "settings": "設定",
         "devConsole": "開発者コンソール"
     },
@@ -19,6 +22,7 @@
         "search": "検索",
         "confirm": "確認",
         "dismiss": "閉じる",
+        "retry": "再試行",
         "load": "読み込み",
         "install": "インストール",
         "uninstall": "アンインストール",

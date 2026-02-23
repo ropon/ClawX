@@ -124,6 +124,19 @@
         "installMessage": "Install the \"openclaw\" command?",
         "installDetail": "This will create ~/.local/bin/openclaw. Ensure ~/.local/bin is on your PATH if you want to run it globally."
     },
+    "spotlight": {
+        "title": "Desktop Assistant",
+        "description": "Configure the Spotlight quick chat window",
+        "shortcutLabel": "Shortcut",
+        "shortcutDesc": "Global keyboard shortcut to toggle the quick chat window",
+        "recording": "Press keys...",
+        "recordBtn": "Record",
+        "cancelBtn": "Cancel",
+        "notificationsLabel": "Notifications",
+        "notificationsDesc": "Show system notification when AI reply is ready (only when window is not focused)",
+        "launchAtStartup": "Launch at Startup",
+        "launchAtStartupDesc": "Automatically start ClawX when you log in"
+    },
     "about": {
         "title": "About",
         "appName": "ClawX",

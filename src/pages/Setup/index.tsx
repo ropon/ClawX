@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { invoke, openExternal, showItemInFolder } from '@/lib/bridge';
 import { useGatewayStore } from '@/stores/gateway';
 import { useSettingsStore } from '@/stores/settings';
 import { useTranslation } from 'react-i18next';
@@ -133,6 +134,12 @@ export function Setup() {
   const isLastStep = safeStepIndex === steps.length - 1;
 
   const markSetupComplete = useSettingsStore((state) => state.markSetupComplete);
+  const [appVersion, setAppVersion] = useState('');
+
+  // Get current app version on mount
+  useEffect(() => {
+    invoke<string>('app:version').then(setAppVersion).catch(() => setAppVersion('unknown'));
+  }, []);
 
   // Derive canProceed based on current step - computed directly to avoid useEffect
   const canProceed = useMemo(() => {
@@ -156,8 +163,8 @@ export function Setup() {
 
   const handleNext = async () => {
     if (isLastStep) {
-      // Complete setup
-      markSetupComplete();
+      // Complete setup with current version
+      markSetupComplete(appVersion);
       toast.success(t('complete.title'));
       navigate('/');
     } else {
@@ -170,7 +177,7 @@ export function Setup() {
   };
 
   const handleSkip = () => {
-    markSetupComplete();
+    markSetupComplete(appVersion);
     navigate('/');
   };
 
@@ -369,6 +376,7 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
   const { t } = useTranslation('setup');
   const gatewayStatus = useGatewayStore((state) => state.status);
   const startGateway = useGatewayStore((state) => state.start);
+  const startupProgress = useGatewayStore((state) => state.startupProgress);
 
   const [checks, setChecks] = useState({
     nodejs: { status: 'checking' as 'checking' | 'success' | 'error', message: '' },
@@ -388,7 +396,7 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
       gateway: { status: 'checking', message: '' },
     });
 
-    // Check Node.js — always available in Electron
+    // Check Node.js — required for Gateway
     setChecks((prev) => ({
       ...prev,
       nodejs: { status: 'success', message: t('runtime.status.success') },
@@ -396,12 +404,12 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
 
     // Check OpenClaw package status
     try {
-      const openclawStatus = await window.electron.ipcRenderer.invoke('openclaw:status') as {
+      const openclawStatus = await invoke<{
         packageExists: boolean;
         isBuilt: boolean;
         dir: string;
         version?: string;
-      };
+      }>('openclaw:status');
 
       setOpenclawDir(openclawStatus.dir);
 
@@ -520,7 +528,7 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
         }
         return prev;
       });
-    }, 600 * 1000); // 600 seconds — enough for gateway to fully initialize
+    }, 60 * 1000); // 60 seconds — Gateway should be ready within this time
 
     return () => {
       if (gatewayTimeoutRef.current) {
@@ -540,7 +548,7 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
 
   const handleShowLogs = async () => {
     try {
-      const logs = await window.electron.ipcRenderer.invoke('log:readFile', 100) as string;
+      const logs = await invoke<string>('log:readFile', 100);
       setLogContent(logs);
       setShowLogs(true);
     } catch {
@@ -551,9 +559,9 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
 
   const handleOpenLogDir = async () => {
     try {
-      const logDir = await window.electron.ipcRenderer.invoke('log:getDir') as string;
+      const logDir = await invoke<string>('log:getDir');
       if (logDir) {
-        await window.electron.ipcRenderer.invoke('shell:showItemInFolder', logDir);
+        await showItemInFolder(logDir);
       }
     } catch {
       // ignore
@@ -644,8 +652,21 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
               </Button>
             )}
           </div>
-          <div className="flex justify-end">
-            {renderStatus(checks.gateway.status, checks.gateway.message)}
+          <div className="flex items-center gap-2 justify-end">
+            {startupProgress && startupProgress.phase !== 'ready' && startupProgress.phase !== 'failed' && (
+              <div className="w-24 h-1 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${startupProgress.progressPct}%` }}
+                />
+              </div>
+            )}
+            {renderStatus(
+              checks.gateway.status,
+              startupProgress && checks.gateway.status === 'checking'
+                ? startupProgress.message
+                : checks.gateway.message
+            )}
           </div>
         </div>
       </div>
@@ -720,8 +741,8 @@ function ProviderContent({
     let cancelled = false;
     (async () => {
       try {
-        const list = await window.electron.ipcRenderer.invoke('provider:list') as Array<{ id: string; type: string; hasKey: boolean }>;
-        const defaultId = await window.electron.ipcRenderer.invoke('provider:getDefault') as string | null;
+        const list = await invoke<Array<{ id: string; type: string; hasKey: boolean }>>('provider:list');
+        const defaultId = await invoke<string | null>('provider:getDefault');
         const setupProviderTypes = new Set<string>(providers.map((p) => p.id));
         const setupCandidates = list.filter((p) => setupProviderTypes.has(p.type));
         const preferred =
@@ -734,7 +755,7 @@ function ProviderContent({
           const typeInfo = providers.find((p) => p.id === preferred.type);
           const requiresKey = typeInfo?.requiresApiKey ?? false;
           onConfiguredChange(!requiresKey || preferred.hasKey);
-          const storedKey = await window.electron.ipcRenderer.invoke('provider:getApiKey', preferred.id) as string | null;
+          const storedKey = await invoke<string | null>('provider:getApiKey', preferred.id);
           if (storedKey) {
             onApiKeyChange(storedKey);
           }
@@ -756,8 +777,8 @@ function ProviderContent({
     (async () => {
       if (!selectedProvider) return;
       try {
-        const list = await window.electron.ipcRenderer.invoke('provider:list') as Array<{ id: string; type: string; hasKey: boolean }>;
-        const defaultId = await window.electron.ipcRenderer.invoke('provider:getDefault') as string | null;
+        const list = await invoke<Array<{ id: string; type: string; hasKey: boolean }>>('provider:list');
+        const defaultId = await invoke<string | null>('provider:getDefault');
         const sameType = list.filter((p) => p.type === selectedProvider);
         const preferredInstance =
           (defaultId && sameType.find((p) => p.id === defaultId))
@@ -766,11 +787,11 @@ function ProviderContent({
         const providerIdForLoad = preferredInstance?.id || selectedProvider;
         setSelectedProviderConfigId(providerIdForLoad);
 
-        const savedProvider = await window.electron.ipcRenderer.invoke(
+        const savedProvider = await invoke<{ baseUrl?: string; model?: string } | null>(
           'provider:get',
           providerIdForLoad
-        ) as { baseUrl?: string; model?: string } | null;
-        const storedKey = await window.electron.ipcRenderer.invoke('provider:getApiKey', providerIdForLoad) as string | null;
+        );
+        const storedKey = await invoke<string | null>('provider:getApiKey', providerIdForLoad);
         if (!cancelled) {
           if (storedKey) {
             onApiKeyChange(storedKey);
@@ -829,12 +850,12 @@ function ProviderContent({
     try {
       // Validate key if the provider requires one and a key was entered
       if (requiresKey && apiKey) {
-        const result = await window.electron.ipcRenderer.invoke(
+        const result = await invoke<{ valid: boolean; error?: string }>(
           'provider:validateKey',
           selectedProviderConfigId || selectedProvider,
           apiKey,
           { baseUrl: baseUrl.trim() || undefined }
-        ) as { valid: boolean; error?: string };
+        );
 
         setKeyValid(result.valid);
 
@@ -860,7 +881,7 @@ function ProviderContent({
           : selectedProvider;
 
       // Save provider config + API key, then set as default
-      const saveResult = await window.electron.ipcRenderer.invoke(
+      const saveResult = await invoke<{ success: boolean; error?: string }>(
         'provider:save',
         {
           id: providerIdForSave,
@@ -873,16 +894,16 @@ function ProviderContent({
           updatedAt: new Date().toISOString(),
         },
         apiKey || undefined
-      ) as { success: boolean; error?: string };
+      );
 
       if (!saveResult.success) {
         throw new Error(saveResult.error || 'Failed to save provider config');
       }
 
-      const defaultResult = await window.electron.ipcRenderer.invoke(
+      const defaultResult = await invoke<{ success: boolean; error?: string }>(
         'provider:setDefault',
         providerIdForSave
-      ) as { success: boolean; error?: string };
+      );
 
       if (!defaultResult.success) {
         throw new Error(defaultResult.error || 'Failed to set default provider');
@@ -1122,10 +1143,10 @@ function SetupChannelContent() {
     (async () => {
       if (!selectedChannel) return;
       try {
-        const result = await window.electron.ipcRenderer.invoke(
+        const result = await invoke<{ success: boolean; values?: Record<string, string> }>(
           'channel:getFormValues',
           selectedChannel
-        ) as { success: boolean; values?: Record<string, string> };
+        );
         if (cancelled) return;
         if (result.success && result.values) {
           setConfigValues(result.values);
@@ -1156,11 +1177,11 @@ function SetupChannelContent() {
 
     try {
       // Validate credentials first
-      const validation = await window.electron.ipcRenderer.invoke(
+      const validation = await invoke<{ success: boolean; valid?: boolean; errors?: string[]; details?: Record<string, string> }>(
         'channel:validateCredentials',
         selectedChannel,
         configValues
-      ) as { success: boolean; valid?: boolean; errors?: string[]; details?: Record<string, string> };
+      );
 
       if (!validation.valid) {
         setValidationError((validation.errors || ['Validation failed']).join(', '));
@@ -1169,7 +1190,7 @@ function SetupChannelContent() {
       }
 
       // Save config
-      await window.electron.ipcRenderer.invoke('channel:saveConfig', selectedChannel, { ...configValues });
+      await invoke('channel:saveConfig', selectedChannel, { ...configValues });
 
       const botName = validation.details?.botUsername ? ` (@${validation.details.botUsername})` : '';
       toast.success(`${meta.name} configured${botName}`);
@@ -1268,11 +1289,7 @@ function SetupChannelContent() {
               onClick={() => {
                 try {
                   const url = t(meta.docsUrl!);
-                  if (window.electron?.openExternal) {
-                    window.electron.openExternal(url);
-                  } else {
-                    window.open(url, '_blank');
-                  }
+                  openExternal(url);
                 } catch {
                   // ignore
                 }
@@ -1399,10 +1416,10 @@ function InstallingContent({ skills, onComplete, onSkip }: InstallingContentProp
         setOverallProgress(10);
 
         // Step 2: Call the backend to install uv and setup Python
-        const result = await window.electron.ipcRenderer.invoke('uv:install-all') as {
+        const result = await invoke<{
           success: boolean;
           error?: string
-        };
+        }>('uv:install-all');
 
         if (result.success) {
           setSkillStates(prev => prev.map(s => ({ ...s, status: 'completed' })));

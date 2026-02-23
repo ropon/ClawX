@@ -1,0 +1,69 @@
+{
+    "title": "知识库",
+    "subtitle": "管理知识库，为 AI 提供检索增强生成 (RAG) 能力",
+    "createKB": "新建知识库",
+    "searchPlaceholder": "搜索知识库...",
+    "empty": {
+        "title": "暂无知识库",
+        "description": "创建知识库并上传文档，为智能体启用检索增强生成 (RAG) 功能。",
+        "cta": "创建知识库"
+    },
+    "card": {
+        "documents": "{{count}} 个文档",
+        "chunks": "{{count}} 个片段",
+        "noDescription": "暂无描述",
+        "watchActive": "正在监听文件夹"
+    },
+    "editor": {
+        "createTitle": "创建知识库",
+        "editTitle": "编辑知识库",
+        "name": "名称",
+        "namePlaceholder": "例如：产品文档",
+        "description": "描述",
+        "descriptionPlaceholder": "简要描述此知识库的用途",
+        "embeddingModel": "向量模型",
+        "embeddingModelDesc": "选择用于生成向量嵌入的模型",
+        "chunkSize": "分块大小",
+        "chunkSizeDesc": "每个文本块的最大字符数",
+        "chunkOverlap": "分块重叠",
+        "chunkOverlapDesc": "相邻块之间的重叠字符数",
+        "detectingDimension": "正在检测维度..."
+    },
+    "detail": {
+        "documents": "文档",
+        "addDocuments": "添加文档",
+        "addUrl": "添加网址",
+        "noDocuments": "暂无文档。上传文件或添加网址来填充此知识库。",
+        "fileName": "文件名",
+        "fileType": "类型",
+        "status": "状态",
+        "chunks": "片段",
+        "actions": "操作",
+        "reprocess": "重新处理",
+        "remove": "删除",
+        "removeConfirm": "删除 \"{{name}}\"？所有关联的片段将被删除。",
+        "processing": "处理中...",
+        "urlPlaceholder": "https://example.com/article",
+        "urlDialogTitle": "添加网页",
+        "urlDialogDesc": "输入网址，系统将抓取内容并添加到知识库"
+    },
+    "search": {
+        "title": "搜索",
+        "placeholder": "在此知识库中搜索...",
+        "noResults": "未找到结果",
+        "source": "来源",
+        "score": "相关度"
+    },
+    "watch": {
+        "title": "文件夹监听",
+        "description": "自动同步指定文件夹中的文件",
+        "selectFolder": "选择文件夹",
+        "stopWatching": "停止监听",
+        "watching": "正在监听: {{path}}",
+        "notWatching": "未监听任何文件夹"
+    },
+    "deleteConfirm": {
+        "title": "删除知识库",
+        "message": "确定要删除 \"{{name}}\"？所有文档和向量数据将被永久删除。"
+    }
+}

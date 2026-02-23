@@ -4,6 +4,8 @@
  * Communicates with OpenClaw Gateway via gateway:rpc IPC.
  */
 import { create } from 'zustand';
+import { invoke } from '@/lib/bridge';
+import { useAgentStore } from './agents';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -84,7 +86,14 @@ interface ChatState {
   showThinking: boolean;
   thinkingLevel: string | null;
 
+  // Retry
+  lastSentText: string | null;
+
+  // Agent session filter
+  agentSessionFilter: string | null;
+
   // Actions
+  setAgentSessionFilter: (agentId: string | null) => void;
   loadSessions: () => Promise<void>;
   switchSession: (key: string) => void;
   newSession: () => void;
@@ -95,6 +104,7 @@ interface ChatState {
   toggleThinking: () => void;
   refresh: () => Promise<void>;
   clearError: () => void;
+  retryLastMessage: () => void;
 }
 
 const DEFAULT_CANONICAL_PREFIX = 'agent:main';
@@ -199,7 +209,7 @@ async function loadMissingPreviews(messages: RawMessage[]): Promise<boolean> {
   if (needPreview.length === 0) return false;
 
   try {
-    const thumbnails = await window.electron.ipcRenderer.invoke(
+    const thumbnails = await invoke(
       'media:getThumbnails',
       needPreview,
     ) as Record<string, { preview: string | null; fileSize: number }>;
@@ -503,11 +513,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
   showThinking: true,
   thinkingLevel: null,
 
+  lastSentText: null,
+
+  agentSessionFilter: null,
+
+  setAgentSessionFilter: (agentId: string | null) => {
+    set({ agentSessionFilter: agentId });
+    // Reload sessions to apply filter
+    get().loadSessions();
+  },
+
   // ── Load sessions via sessions.list ──
 
   loadSessions: async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke(
+      const result = await invoke(
         'gateway:rpc',
         'sessions.list',
         { limit: 50 }
@@ -544,6 +564,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return true;
         });
 
+        // Apply agent session filter
+        const { agentSessionFilter } = get();
+        let visibleSessions = dedupedSessions;
+        if (agentSessionFilter) {
+          visibleSessions = dedupedSessions.filter((s) =>
+            s.key.startsWith(`agent:${agentSessionFilter}:`)
+          );
+          // If no sessions exist for this agent, create an initial one
+          if (visibleSessions.length === 0) {
+            const initKey = `agent:${agentSessionFilter}:main`;
+            visibleSessions = [{ key: initKey, displayName: initKey }];
+          }
+        }
+
         const { currentSessionKey } = get();
         let nextSessionKey = currentSessionKey || DEFAULT_SESSION_KEY;
         if (!nextSessionKey.startsWith('agent:')) {
@@ -552,17 +586,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
             nextSessionKey = canonicalMatch;
           }
         }
-        if (!dedupedSessions.find((s) => s.key === nextSessionKey) && dedupedSessions.length > 0) {
-          // Current session not found at all — switch to the first available session
-          nextSessionKey = dedupedSessions[0].key;
+        if (!visibleSessions.find((s) => s.key === nextSessionKey) && visibleSessions.length > 0) {
+          // Current session not found in visible set — switch to the first available
+          nextSessionKey = visibleSessions[0].key;
         }
 
-        const sessionsWithCurrent = !dedupedSessions.find((s) => s.key === nextSessionKey) && nextSessionKey
+        const sessionsWithCurrent = !visibleSessions.find((s) => s.key === nextSessionKey) && nextSessionKey
           ? [
-            ...dedupedSessions,
+            ...visibleSessions,
             { key: nextSessionKey, displayName: nextSessionKey },
           ]
-          : dedupedSessions;
+          : visibleSessions;
 
         set({ sessions: sessionsWithCurrent, currentSessionKey: nextSessionKey });
 
@@ -596,9 +630,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // ── New session ──
 
   newSession: () => {
-    // Generate a new unique session key and switch to it
-    const prefix = getCanonicalPrefixFromSessions(get().sessions) ?? DEFAULT_CANONICAL_PREFIX;
-    const newKey = `${prefix}:session-${Date.now()}`;
+    // Generate a new unique session key, using active agent ID as prefix
+    const activeAgent = useAgentStore.getState().getActiveAgent();
+    const agentPrefix = activeAgent ? `agent:${activeAgent.id}` : (getCanonicalPrefixFromSessions(get().sessions) ?? DEFAULT_CANONICAL_PREFIX);
+    const newKey = `${agentPrefix}:session-${Date.now()}`;
     const newSessionEntry: ChatSession = { key: newKey, displayName: newKey };
     set((s) => ({
       currentSessionKey: newKey,
@@ -617,15 +652,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // ── Load chat history ──
 
   loadHistory: async () => {
-    const { currentSessionKey } = get();
+    const sessionKeyAtStart = get().currentSessionKey;
     set({ loading: true, error: null });
 
     try {
-      const result = await window.electron.ipcRenderer.invoke(
+      const result = await invoke(
         'gateway:rpc',
         'chat.history',
-        { sessionKey: currentSessionKey, limit: 200 }
+        { sessionKey: sessionKeyAtStart, limit: 200 }
       ) as { success: boolean; result?: Record<string, unknown>; error?: string };
+
+      // Guard: if user switched sessions while we were loading, discard
+      if (get().currentSessionKey !== sessionKeyAtStart) return;
 
       if (result.success && result.result) {
         const data = result.result;
@@ -678,6 +716,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const trimmed = text.trim();
     if (!trimmed && (!attachments || attachments.length === 0)) return;
 
+    set({ lastSentText: trimmed || null });
     const { currentSessionKey } = get();
 
     // Add user message optimistically (with local file metadata for UI display)
@@ -707,10 +746,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const idempotencyKey = crypto.randomUUID();
       const hasMedia = attachments && attachments.length > 0;
-      console.log(`[sendMessage] hasMedia=${hasMedia}, attachmentCount=${attachments?.length ?? 0}`);
-      if (hasMedia) {
-        console.log('[sendMessage] Media paths:', attachments!.map(a => a.stagedPath));
-      }
 
       // Cache image attachments BEFORE the IPC call to avoid race condition:
       // history may reload (via Gateway event) before the RPC returns.
@@ -729,14 +764,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       let result: { success: boolean; result?: { runId?: string }; error?: string };
 
+      // Get active agent config for system prompt / model overrides
+      const activeAgent = useAgentStore.getState().getActiveAgent();
+
+      // RAG injection (F-3.5): if the agent has knowledge bases, retrieve context
+      let ragPrefix = '';
+      if (activeAgent?.knowledgeBaseIds?.length && trimmed) {
+        try {
+          const ragResult = await invoke(
+            'knowledge:rag',
+            activeAgent.knowledgeBaseIds,
+            trimmed,
+            { topK: 5 }
+          ) as { success: boolean; results?: Array<{ documentName: string; content: string }>; error?: string };
+          if (ragResult.success && ragResult.results?.length) {
+            const chunks = ragResult.results.map((r, i) =>
+              `[${i + 1}] (Source: ${r.documentName})\n${r.content}`
+            ).join('\n---\n');
+            ragPrefix = `<knowledge>\n${chunks}\n</knowledge>\n\n`;
+          }
+        } catch (err) {
+          console.warn('[RAG] Failed to retrieve context:', err);
+        }
+      }
       if (hasMedia) {
         // Use dedicated chat:sendWithMedia handler — main process reads staged files
         // from disk and builds base64 attachments, avoiding large IPC transfers
-        result = await window.electron.ipcRenderer.invoke(
+        result = await invoke(
           'chat:sendWithMedia',
           {
             sessionKey: currentSessionKey,
-            message: trimmed || 'Process the attached file(s).',
+            message: ragPrefix + (trimmed || 'Process the attached file(s).'),
             deliver: false,
             idempotencyKey,
             media: attachments.map((a) => ({
@@ -748,19 +806,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ) as { success: boolean; result?: { runId?: string }; error?: string };
       } else {
         // No media — use standard lightweight RPC
-        result = await window.electron.ipcRenderer.invoke(
+        // Note: chat.send only accepts sessionKey, message, thinking, deliver,
+        // attachments, timeoutMs, idempotencyKey (additionalProperties: false)
+        result = await invoke(
           'gateway:rpc',
           'chat.send',
           {
             sessionKey: currentSessionKey,
-            message: trimmed,
+            message: ragPrefix + trimmed,
             deliver: false,
             idempotencyKey,
           },
         ) as { success: boolean; result?: { runId?: string }; error?: string };
       }
-
-      console.log(`[sendMessage] RPC result: success=${result.success}, error=${result.error || 'none'}, runId=${result.result?.runId || 'none'}`);
 
       if (!result.success) {
         set({ error: result.error || 'Failed to send message', sending: false });
@@ -782,7 +840,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ streamingTools: [] });
 
     try {
-      await window.electron.ipcRenderer.invoke(
+      await invoke(
         'gateway:rpc',
         'chat.abort',
         { sessionKey: currentSessionKey },
@@ -955,6 +1013,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   refresh: async () => {
     const { loadHistory, loadSessions } = get();
     await Promise.all([loadHistory(), loadSessions()]);
+  },
+
+  retryLastMessage: () => {
+    const { lastSentText } = get();
+    if (!lastSentText) return;
+    set({ error: null });
+    get().sendMessage(lastSentText);
   },
 
   clearError: () => set({ error: null }),

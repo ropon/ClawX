@@ -1,0 +1,89 @@
+{
+    "title": "智能体",
+    "subtitle": "创建和管理具有不同人设和配置的 AI 智能体角色",
+    "createAgent": "新建智能体",
+    "searchPlaceholder": "搜索智能体...",
+    "empty": {
+        "title": "暂无智能体",
+        "description": "创建你的第一个 AI 智能体来开始使用。每个智能体可以拥有独立的人设、模型配置和技能。",
+        "cta": "创建首个智能体"
+    },
+    "card": {
+        "default": "默认",
+        "skills": "{{count}} 个技能",
+        "channels": "{{count}} 个通道",
+        "noDescription": "暂无描述"
+    },
+    "actions": {
+        "edit": "编辑",
+        "clone": "克隆",
+        "delete": "删除",
+        "setDefault": "设为默认",
+        "export": "导出",
+        "import": "导入"
+    },
+    "editor": {
+        "createTitle": "创建智能体",
+        "editTitle": "编辑智能体",
+        "basicInfo": "基本信息",
+        "name": "名称",
+        "namePlaceholder": "例如：代码审查员",
+        "avatar": "头像",
+        "description": "描述",
+        "descriptionPlaceholder": "简要描述此智能体的角色定位",
+        "aiConfig": "AI 配置",
+        "provider": "服务商",
+        "providerDefault": "默认（使用全局设置）",
+        "model": "模型",
+        "modelPlaceholder": "例如：claude-sonnet-4-20250514",
+        "temperature": "温度",
+        "maxTokens": "最大 Token 数",
+        "maxTokensPlaceholder": "默认",
+        "systemPrompt": "系统提示词",
+        "systemPromptPlaceholder": "定义此智能体的人设、行为方式和指令...",
+        "skills": "技能",
+        "noSkills": "暂无已安装的技能",
+        "knowledgeBases": "知识库",
+        "knowledgeBasesDesc": "选择知识库以启用 RAG 增强回答",
+        "noKnowledgeBases": "暂无知识库，请前往「知识库」页面创建。",
+        "channelBindings": "通道绑定",
+        "noChannels": "暂无已配置的通道，请前往「通道」页面添加。"
+    },
+    "deleteConfirm": {
+        "title": "删除智能体",
+        "message": "确定要删除「{{name}}」吗？此操作无法撤销。"
+    },
+    "toolbar": {
+        "switchAgent": "切换智能体"
+    },
+    "templates": {
+        "sectionTitle": "选择模板",
+        "sectionDesc": "从模板快速开始，或从零创建",
+        "blankAgent": "空白智能体",
+        "blankAgentDesc": "从零开始，使用空白配置",
+        "translator": {
+            "name": "翻译",
+            "description": "在语言间精准翻译文本，保留语气和文化细微差别"
+        },
+        "coder": {
+            "name": "软件工程师",
+            "description": "编写简洁高效的代码，协助软件开发任务"
+        },
+        "writer": {
+            "name": "写作与编辑",
+            "description": "撰写引人入胜的内容，编辑文稿，提升文章质量"
+        },
+        "analyst": {
+            "name": "数据分析师",
+            "description": "分析数据、发现规律、提炼可行见解"
+        },
+        "tutor": {
+            "name": "导师",
+            "description": "用实例和分步指导清晰地讲解概念"
+        },
+        "reviewer": {
+            "name": "代码审查员",
+            "description": "审查代码中的缺陷、安全问题和最佳实践"
+        }
+    }
+}

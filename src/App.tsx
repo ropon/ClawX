@@ -7,15 +7,20 @@ import { Component, useEffect } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import i18n from './i18n';
+import { invoke, on } from '@/lib/bridge';
 import { MainLayout } from './components/layout/MainLayout';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Dashboard } from './pages/Dashboard';
 import { Chat } from './pages/Chat';
 import { Channels } from './pages/Channels';
 import { Skills } from './pages/Skills';
+import { Agents } from './pages/Agents';
+import { Knowledge } from './pages/Knowledge';
+import { Workflows } from './pages/Workflows';
 import { Cron } from './pages/Cron';
 import { Settings } from './pages/Settings';
 import { Setup } from './pages/Setup';
+import { Spotlight } from './pages/Spotlight';
 import { useSettingsStore } from './stores/settings';
 import { useGatewayStore } from './stores/gateway';
 
@@ -90,6 +95,7 @@ function App() {
   const theme = useSettingsStore((state) => state.theme);
   const language = useSettingsStore((state) => state.language);
   const setupComplete = useSettingsStore((state) => state.setupComplete);
+  const checkSetupVersion = useSettingsStore((state) => state.checkSetupVersion);
   const initGateway = useGatewayStore((state) => state.init);
 
   // Sync i18n language with persisted settings on mount
@@ -99,6 +105,15 @@ function App() {
     }
   }, [language]);
 
+  // Check setup version on mount — force re-setup after major version upgrade
+  useEffect(() => {
+    invoke<string>('app:version').then((version) => {
+      checkSetupVersion(version);
+    }).catch(() => {
+      // Fallback: if can't get version, don't block
+    });
+  }, [checkSetupVersion]);
+
   // Initialize Gateway connection on mount
   useEffect(() => {
     initGateway();
@@ -106,7 +121,7 @@ function App() {
 
   // Redirect to setup wizard if not complete
   useEffect(() => {
-    if (!setupComplete && !location.pathname.startsWith('/setup')) {
+    if (!setupComplete && !location.pathname.startsWith('/setup') && !location.pathname.startsWith('/spotlight')) {
       navigate('/setup');
     }
   }, [setupComplete, location.pathname, navigate]);
@@ -120,12 +135,10 @@ function App() {
       }
     };
 
-    const unsubscribe = window.electron.ipcRenderer.on('navigate', handleNavigate);
+    const unsubscribe = on('navigate', handleNavigate);
 
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      unsubscribe();
     };
   }, [navigate]);
 
@@ -148,6 +161,9 @@ function App() {
     <ErrorBoundary>
       <TooltipProvider delayDuration={300}>
         <Routes>
+          {/* Spotlight window (no sidebar/titlebar) */}
+          <Route path="/spotlight" element={<Spotlight />} />
+
           {/* Setup wizard (shown on first launch) */}
           <Route path="/setup/*" element={<Setup />} />
 
@@ -157,6 +173,11 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/channels" element={<Channels />} />
             <Route path="/skills" element={<Skills />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/knowledge" element={<Knowledge />} />
+            <Route path="/knowledge/:id" element={<Knowledge />} />
+            <Route path="/workflows" element={<Workflows />} />
+            <Route path="/workflows/:id" element={<Workflows />} />
             <Route path="/cron" element={<Cron />} />
             <Route path="/settings/*" element={<Settings />} />
           </Route>

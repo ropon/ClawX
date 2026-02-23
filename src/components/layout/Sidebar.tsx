@@ -15,8 +15,12 @@ import {
   ChevronRight,
   Terminal,
   ExternalLink,
+  Bot,
+  BookOpen,
+  GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { invoke, openExternal } from '@/lib/bridge';
 import { useSettingsStore } from '@/stores/settings';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,13 +71,13 @@ export function Sidebar() {
 
   const openDevConsole = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('gateway:getControlUiUrl') as {
+      const result = await invoke<{
         success: boolean;
         url?: string;
         error?: string;
-      };
+      }>('gateway:getControlUiUrl');
       if (result.success && result.url) {
-        window.electron.openExternal(result.url);
+        openExternal(result.url);
       } else {
         console.error('Failed to get Dev Console URL:', result.error);
       }
@@ -86,6 +90,9 @@ export function Sidebar() {
 
   const navItems = [
     { to: '/', icon: <MessageSquare className="h-5 w-5" />, label: t('sidebar.chat') },
+    { to: '/agents', icon: <Bot className="h-5 w-5" />, label: t('sidebar.agents') },
+    { to: '/knowledge', icon: <BookOpen className="h-5 w-5" />, label: t('sidebar.knowledge') },
+    { to: '/workflows', icon: <GitBranch className="h-5 w-5" />, label: t('sidebar.workflows') },
     { to: '/cron', icon: <Clock className="h-5 w-5" />, label: t('sidebar.cronTasks') },
     { to: '/skills', icon: <Puzzle className="h-5 w-5" />, label: t('sidebar.skills') },
     { to: '/channels', icon: <Radio className="h-5 w-5" />, label: t('sidebar.channels') },

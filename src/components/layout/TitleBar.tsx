@@ -6,10 +6,10 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
 import logoSvg from '@/assets/logo.svg';
-
-const isMac = window.electron?.platform === 'darwin';
+import { invoke, getPlatform } from '@/lib/bridge';
 
 export function TitleBar() {
+  const isMac = getPlatform() === 'darwin';
   if (isMac) {
     // macOS: just a drag region, traffic lights are native
     return <div className="drag-region h-10 shrink-0 border-b bg-background" />;
@@ -23,25 +23,25 @@ function WindowsTitleBar() {
 
   useEffect(() => {
     // Check initial state
-    window.electron.ipcRenderer.invoke('window:isMaximized').then((val) => {
-      setMaximized(val as boolean);
+    invoke<boolean>('window:isMaximized').then((val) => {
+      setMaximized(val);
     });
   }, []);
 
   const handleMinimize = () => {
-    window.electron.ipcRenderer.invoke('window:minimize');
+    invoke('window:minimize');
   };
 
   const handleMaximize = () => {
-    window.electron.ipcRenderer.invoke('window:maximize').then(() => {
-      window.electron.ipcRenderer.invoke('window:isMaximized').then((val) => {
-        setMaximized(val as boolean);
+    invoke('window:maximize').then(() => {
+      invoke<boolean>('window:isMaximized').then((val) => {
+        setMaximized(val);
       });
     });
   };
 
   const handleClose = () => {
-    window.electron.ipcRenderer.invoke('window:close');
+    invoke('window:close');
   };
 
   return (

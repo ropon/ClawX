@@ -1,25 +1,10 @@
 /**
- * Electron API Type Declarations
- * Types for the APIs exposed via contextBridge
+ * Tauri Runtime Type Declarations
  */
-
-export interface IpcRenderer {
-  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
-  on(channel: string, callback: (...args: unknown[]) => void): (() => void) | void;
-  once(channel: string, callback: (...args: unknown[]) => void): void;
-  off(channel: string, callback?: (...args: unknown[]) => void): void;
-}
-
-export interface ElectronAPI {
-  ipcRenderer: IpcRenderer;
-  openExternal: (url: string) => Promise<void>;
-  platform: NodeJS.Platform;
-  isDev: boolean;
-}
 
 declare global {
   interface Window {
-    electron: ElectronAPI;
+    __TAURI_INTERNALS__?: unknown;
   }
 }
 

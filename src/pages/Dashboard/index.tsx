@@ -21,6 +21,7 @@ import { useGatewayStore } from '@/stores/gateway';
 import { useChannelsStore } from '@/stores/channels';
 import { useSkillsStore } from '@/stores/skills';
 import { useSettingsStore } from '@/stores/settings';
+import { invoke, openExternal } from '@/lib/bridge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useTranslation } from 'react-i18next';
 
@@ -67,13 +68,13 @@ export function Dashboard() {
 
   const openDevConsole = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('gateway:getControlUiUrl') as {
+      const result = await invoke<{
         success: boolean;
         url?: string;
         error?: string;
-      };
+      }>('gateway:getControlUiUrl');
       if (result.success && result.url) {
-        window.electron.openExternal(result.url);
+        openExternal(result.url);
       } else {
         console.error('Failed to get Dev Console URL:', result.error);
       }
@@ -220,7 +221,6 @@ export function Dashboard() {
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-lg">
-                        {channel.type === 'whatsapp' && '📱'}
                         {channel.type === 'telegram' && '✈️'}
                         {channel.type === 'discord' && '🎮'}
                       </span>

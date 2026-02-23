@@ -1,0 +1,92 @@
+{
+  "input": {
+    "placeholder": "何でも聞いてください... (Esc で閉じる)"
+  },
+  "clipboard": {
+    "text": "テキスト",
+    "url": "URL",
+    "code": "コード",
+    "image": "画像"
+  },
+  "actions": {
+    "translate": "翻訳",
+    "summarize": "要約",
+    "explain": "説明",
+    "review": "コードレビュー",
+    "explainCode": "コード説明",
+    "optimize": "最適化",
+    "summarizePage": "ページ要約",
+    "describe": "説明する"
+  },
+  "response": {
+    "thinking": "考え中...",
+    "copy": "コピー",
+    "copied": "コピーしました！"
+  },
+  "screenshot": {
+    "capture": "スクリーンショット",
+    "attached": "スクリーンショット添付済み",
+    "permissionDenied": "画面収録の権限が必要です",
+    "analyzeThis": "このスクリーンショットを説明... (Enter で送信)"
+  },
+  "error": {
+    "gatewayNotRunning": "Gatewayが実行されていません。メインウィンドウから起動してください。"
+  },
+  "commands": {
+    "categories": {
+      "general": "一般",
+      "code": "コード",
+      "writing": "ライティング",
+      "analysis": "分析"
+    },
+    "translate": {
+      "name": "翻訳",
+      "description": "クリップボードのテキストを翻訳"
+    },
+    "translateTo": {
+      "name": "翻訳先指定",
+      "description": "指定した言語に翻訳",
+      "inputPlaceholder": "対象言語（例：英語）..."
+    },
+    "summarize": {
+      "name": "要約",
+      "description": "クリップボードの内容を要約"
+    },
+    "explain": {
+      "name": "説明",
+      "description": "簡単な言葉で説明"
+    },
+    "review": {
+      "name": "コードレビュー",
+      "description": "バグや改善点をレビュー"
+    },
+    "explainCode": {
+      "name": "コード説明",
+      "description": "コードをステップごとに説明"
+    },
+    "optimize": {
+      "name": "最適化",
+      "description": "パフォーマンスと可読性を最適化"
+    },
+    "rewrite": {
+      "name": "書き直し",
+      "description": "指定したスタイルで書き直す",
+      "inputPlaceholder": "スタイル（例：フォーマル、カジュアル）..."
+    },
+    "fixGrammar": {
+      "name": "文法修正",
+      "description": "文法とスペルを修正"
+    },
+    "ask": {
+      "name": "質問",
+      "description": "一般的な質問をする",
+      "inputPlaceholder": "質問を入力..."
+    }
+  },
+  "fileSearch": {
+    "attachFile": "ファイルを添付",
+    "searching": "ファイルを検索中...",
+    "noResults": "ファイルが見つかりません",
+    "hint": "2文字以上入力して検索..."
+  }
+}

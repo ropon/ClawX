@@ -1,0 +1,69 @@
+{
+    "title": "Knowledge Bases",
+    "subtitle": "Manage knowledge bases for RAG-enhanced AI responses",
+    "createKB": "New Knowledge Base",
+    "searchPlaceholder": "Search knowledge bases...",
+    "empty": {
+        "title": "No Knowledge Bases Yet",
+        "description": "Create a knowledge base and upload documents to enable retrieval-augmented generation (RAG) for your agents.",
+        "cta": "Create Knowledge Base"
+    },
+    "card": {
+        "documents": "{{count}} documents",
+        "chunks": "{{count}} chunks",
+        "noDescription": "No description",
+        "watchActive": "Watching folder"
+    },
+    "editor": {
+        "createTitle": "Create Knowledge Base",
+        "editTitle": "Edit Knowledge Base",
+        "name": "Name",
+        "namePlaceholder": "e.g. Product Documentation",
+        "description": "Description",
+        "descriptionPlaceholder": "Brief description of this knowledge base",
+        "embeddingModel": "Embedding Model",
+        "embeddingModelDesc": "Select the model used to generate vector embeddings",
+        "chunkSize": "Chunk Size",
+        "chunkSizeDesc": "Maximum characters per text chunk",
+        "chunkOverlap": "Chunk Overlap",
+        "chunkOverlapDesc": "Overlapping characters between chunks",
+        "detectingDimension": "Detecting dimension..."
+    },
+    "detail": {
+        "documents": "Documents",
+        "addDocuments": "Add Documents",
+        "addUrl": "Add URL",
+        "noDocuments": "No documents yet. Upload files or add URLs to populate this knowledge base.",
+        "fileName": "File Name",
+        "fileType": "Type",
+        "status": "Status",
+        "chunks": "Chunks",
+        "actions": "Actions",
+        "reprocess": "Reprocess",
+        "remove": "Remove",
+        "removeConfirm": "Remove \"{{name}}\"? This will delete all associated chunks.",
+        "processing": "Processing...",
+        "urlPlaceholder": "https://example.com/article",
+        "urlDialogTitle": "Add Web URL",
+        "urlDialogDesc": "Enter a URL to scrape and add to the knowledge base"
+    },
+    "search": {
+        "title": "Search",
+        "placeholder": "Search within this knowledge base...",
+        "noResults": "No results found",
+        "source": "Source",
+        "score": "Relevance"
+    },
+    "watch": {
+        "title": "Folder Watcher",
+        "description": "Automatically sync files from a folder",
+        "selectFolder": "Select Folder",
+        "stopWatching": "Stop Watching",
+        "watching": "Watching: {{path}}",
+        "notWatching": "Not watching any folder"
+    },
+    "deleteConfirm": {
+        "title": "Delete Knowledge Base",
+        "message": "Are you sure you want to delete \"{{name}}\"? All documents and embeddings will be permanently removed."
+    }
+}

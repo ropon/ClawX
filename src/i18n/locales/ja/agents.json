@@ -1,0 +1,89 @@
+{
+    "title": "エージェント",
+    "subtitle": "異なるペルソナと設定を持つAIエージェントロールを作成・管理",
+    "createAgent": "新規エージェント",
+    "searchPlaceholder": "エージェントを検索...",
+    "empty": {
+        "title": "エージェントがありません",
+        "description": "最初のAIエージェントを作成して始めましょう。各エージェントは独自のペルソナ、モデル設定、スキルを持てます。",
+        "cta": "最初のエージェントを作成"
+    },
+    "card": {
+        "default": "デフォルト",
+        "skills": "{{count}} スキル",
+        "channels": "{{count}} チャネル",
+        "noDescription": "説明なし"
+    },
+    "actions": {
+        "edit": "編集",
+        "clone": "クローン",
+        "delete": "削除",
+        "setDefault": "デフォルトに設定",
+        "export": "エクスポート",
+        "import": "インポート"
+    },
+    "editor": {
+        "createTitle": "エージェント作成",
+        "editTitle": "エージェント編集",
+        "basicInfo": "基本情報",
+        "name": "名前",
+        "namePlaceholder": "例：コードレビュアー",
+        "avatar": "アバター",
+        "description": "説明",
+        "descriptionPlaceholder": "このエージェントの役割を簡潔に説明",
+        "aiConfig": "AI設定",
+        "provider": "プロバイダー",
+        "providerDefault": "デフォルト（設定から）",
+        "model": "モデル",
+        "modelPlaceholder": "例：claude-sonnet-4-20250514",
+        "temperature": "温度",
+        "maxTokens": "最大トークン数",
+        "maxTokensPlaceholder": "デフォルト",
+        "systemPrompt": "システムプロンプト",
+        "systemPromptPlaceholder": "このエージェントのペルソナ、振る舞い、指示を定義...",
+        "skills": "スキル",
+        "noSkills": "インストール済みスキルがありません",
+        "knowledgeBases": "ナレッジベース",
+        "knowledgeBasesDesc": "RAG強化レスポンスのためのナレッジベースを選択",
+        "noKnowledgeBases": "ナレッジベースがありません。ナレッジページで作成してください。",
+        "channelBindings": "チャネルバインディング",
+        "noChannels": "設定済みのチャネルがありません。チャネルページで追加してください。"
+    },
+    "deleteConfirm": {
+        "title": "エージェント削除",
+        "message": "「{{name}}」を削除してもよろしいですか？この操作は取り消せません。"
+    },
+    "toolbar": {
+        "switchAgent": "エージェント切替"
+    },
+    "templates": {
+        "sectionTitle": "テンプレートを選択",
+        "sectionDesc": "テンプレートから始めるか、ゼロから作成",
+        "blankAgent": "空白エージェント",
+        "blankAgentDesc": "空の設定でゼロから作成",
+        "translator": {
+            "name": "翻訳者",
+            "description": "言語間でテキストを正確に翻訳し、トーンとニュアンスを保持"
+        },
+        "coder": {
+            "name": "ソフトウェアエンジニア",
+            "description": "クリーンで効率的なコードを書き、ソフトウェア開発タスクを支援"
+        },
+        "writer": {
+            "name": "ライター＆エディター",
+            "description": "魅力的なコンテンツを作成し、文章を編集して明瞭さを向上"
+        },
+        "analyst": {
+            "name": "データアナリスト",
+            "description": "データを分析し、パターンを特定し、実用的なインサイトを導出"
+        },
+        "tutor": {
+            "name": "チューター",
+            "description": "例とステップバイステップのガイダンスで概念をわかりやすく説明"
+        },
+        "reviewer": {
+            "name": "コードレビュアー",
+            "description": "バグ、セキュリティ問題、ベストプラクティスの遵守をレビュー"
+        }
+    }
+}

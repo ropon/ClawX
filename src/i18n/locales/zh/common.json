@@ -5,6 +5,9 @@
         "skills": "技能",
         "channels": "频道",
         "dashboard": "仪表盘",
+        "agents": "智能体",
+        "knowledge": "知识库",
+        "workflows": "工作流",
         "settings": "设置",
         "devConsole": "开发者控制台"
     },
@@ -19,6 +22,7 @@
         "search": "搜索",
         "confirm": "确认",
         "dismiss": "忽略",
+        "retry": "重试",
         "load": "加载",
         "install": "安装",
         "uninstall": "卸载",

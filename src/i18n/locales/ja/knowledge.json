@@ -1,0 +1,69 @@
+{
+    "title": "ナレッジベース",
+    "subtitle": "RAG強化AIレスポンスのためのナレッジベースを管理",
+    "createKB": "新規ナレッジベース",
+    "searchPlaceholder": "ナレッジベースを検索...",
+    "empty": {
+        "title": "ナレッジベースがありません",
+        "description": "ナレッジベースを作成してドキュメントをアップロードし、エージェントの検索拡張生成 (RAG) を有効にしましょう。",
+        "cta": "ナレッジベースを作成"
+    },
+    "card": {
+        "documents": "{{count}} ドキュメント",
+        "chunks": "{{count}} チャンク",
+        "noDescription": "説明なし",
+        "watchActive": "フォルダー監視中"
+    },
+    "editor": {
+        "createTitle": "ナレッジベースを作成",
+        "editTitle": "ナレッジベースを編集",
+        "name": "名前",
+        "namePlaceholder": "例: 製品ドキュメント",
+        "description": "説明",
+        "descriptionPlaceholder": "このナレッジベースの簡単な説明",
+        "embeddingModel": "埋め込みモデル",
+        "embeddingModelDesc": "ベクトル埋め込みの生成に使用するモデルを選択",
+        "chunkSize": "チャンクサイズ",
+        "chunkSizeDesc": "テキストチャンクあたりの最大文字数",
+        "chunkOverlap": "チャンクオーバーラップ",
+        "chunkOverlapDesc": "チャンク間の重複文字数",
+        "detectingDimension": "次元を検出中..."
+    },
+    "detail": {
+        "documents": "ドキュメント",
+        "addDocuments": "ドキュメントを追加",
+        "addUrl": "URLを追加",
+        "noDocuments": "ドキュメントがありません。ファイルをアップロードまたはURLを追加してください。",
+        "fileName": "ファイル名",
+        "fileType": "タイプ",
+        "status": "ステータス",
+        "chunks": "チャンク",
+        "actions": "操作",
+        "reprocess": "再処理",
+        "remove": "削除",
+        "removeConfirm": "\"{{name}}\" を削除しますか？関連するすべてのチャンクが削除されます。",
+        "processing": "処理中...",
+        "urlPlaceholder": "https://example.com/article",
+        "urlDialogTitle": "Web URLを追加",
+        "urlDialogDesc": "URLを入力してナレッジベースにスクレイプして追加"
+    },
+    "search": {
+        "title": "検索",
+        "placeholder": "このナレッジベース内を検索...",
+        "noResults": "結果が見つかりません",
+        "source": "ソース",
+        "score": "関連度"
+    },
+    "watch": {
+        "title": "フォルダー監視",
+        "description": "フォルダーのファイルを自動的に同期",
+        "selectFolder": "フォルダーを選択",
+        "stopWatching": "監視を停止",
+        "watching": "監視中: {{path}}",
+        "notWatching": "フォルダーを監視していません"
+    },
+    "deleteConfirm": {
+        "title": "ナレッジベースを削除",
+        "message": "\"{{name}}\" を削除してもよろしいですか？すべてのドキュメントと埋め込みが完全に削除されます。"
+    }
+}

@@ -73,7 +73,28 @@
         "autoCheck": "自動更新チェック",
         "autoCheckDesc": "起動時に更新を確認",
         "autoDownload": "自動ダウンロード",
-        "autoDownloadDesc": "バックグラウンドで更新をダウンロード"
+        "autoDownloadDesc": "バックグラウンドで更新をダウンロード",
+        "status": {
+            "checking": "更新を確認中...",
+            "downloading": "更新をダウンロード中...",
+            "available": "更新あり: v{{version}}",
+            "downloaded": "インストール準備完了: v{{version}}",
+            "failed": "更新の確認に失敗しました",
+            "latest": "最新バージョンです",
+            "check": "最新機能を取得するには更新を確認してください"
+        },
+        "action": {
+            "checking": "確認中...",
+            "downloading": "ダウンロード中...",
+            "download": "更新をダウンロード",
+            "install": "インストールして再起動",
+            "retry": "再試行",
+            "check": "更新を確認"
+        },
+        "currentVersion": "現在のバージョン",
+        "whatsNew": "新機能:",
+        "errorDetails": "エラー詳細:",
+        "help": "更新はバックグラウンドでダウンロードされ、アプリの再起動時にインストールされます。"
     },
     "advanced": {
         "title": "詳細設定",
@@ -102,6 +123,19 @@
         "installTitle": "OpenClaw コマンドをインストール",
         "installMessage": "\"openclaw\" コマンドをインストールしますか？",
         "installDetail": "~/.local/bin/openclaw が作成されます。グローバルに実行するには ~/.local/bin が PATH に含まれていることを確認してください。"
+    },
+    "spotlight": {
+        "title": "デスクトップアシスタント",
+        "description": "Spotlight クイックチャットウィンドウを設定",
+        "shortcutLabel": "ショートカット",
+        "shortcutDesc": "クイックチャットウィンドウを切り替えるグローバルキーボードショートカット",
+        "recording": "キーを押してください...",
+        "recordBtn": "記録",
+        "cancelBtn": "キャンセル",
+        "notificationsLabel": "通知",
+        "notificationsDesc": "AI の応答完了時にシステム通知を表示（ウィンドウが非アクティブの場合のみ）",
+        "launchAtStartup": "ログイン時に起動",
+        "launchAtStartupDesc": "システムログイン時に ClawX を自動的に起動"
     },
     "about": {
         "title": "バージョン情報",

@@ -45,6 +45,21 @@ export interface GatewayNotification {
 }
 
 /**
+ * Gateway startup phase for progress tracking
+ */
+export type StartupPhase = 'probing' | 'spawning' | 'waiting_ready' | 'connecting' | 'ready' | 'failed';
+
+/**
+ * Gateway startup progress event payload
+ */
+export interface GatewayStartupProgress {
+  phase: StartupPhase;
+  message: string;
+  elapsedMs: number;
+  progressPct: number;
+}
+
+/**
  * Provider configuration
  */
 export interface ProviderConfig {

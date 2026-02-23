@@ -2,6 +2,8 @@ import anthropic from './anthropic.svg';
 import openai from './openai.svg';
 import google from './google.svg';
 import openrouter from './openrouter.svg';
+import deepseek from './deepseek.svg';
+import qwen from './qwen.svg';
 import moonshot from './moonshot.svg';
 import siliconflow from './siliconflow.svg';
 import ollama from './ollama.svg';
@@ -12,6 +14,8 @@ export const providerIcons: Record<string, string> = {
     openai,
     google,
     openrouter,
+    deepseek,
+    qwen,
     moonshot,
     siliconflow,
     ollama,

@@ -14,6 +14,8 @@
         "newSession": "新会话",
         "refresh": "刷新聊天",
         "showThinking": "显示思考过程",
-        "hideThinking": "隐藏思考过程"
+        "hideThinking": "隐藏思考过程",
+        "showAllSessions": "显示所有会话",
+        "filterByAgent": "按智能体过滤会话"
     }
 }

@@ -1,0 +1,92 @@
+{
+  "input": {
+    "placeholder": "Ask anything... (Esc to close)"
+  },
+  "clipboard": {
+    "text": "Text",
+    "url": "URL",
+    "code": "Code",
+    "image": "Image"
+  },
+  "actions": {
+    "translate": "Translate",
+    "summarize": "Summarize",
+    "explain": "Explain",
+    "review": "Review Code",
+    "explainCode": "Explain Code",
+    "optimize": "Optimize",
+    "summarizePage": "Summarize Page",
+    "describe": "Describe"
+  },
+  "response": {
+    "thinking": "Thinking...",
+    "copy": "Copy",
+    "copied": "Copied!"
+  },
+  "screenshot": {
+    "capture": "Take Screenshot",
+    "attached": "Screenshot attached",
+    "permissionDenied": "Screen recording permission is required",
+    "analyzeThis": "Describe this screenshot... (Enter to send)"
+  },
+  "error": {
+    "gatewayNotRunning": "Gateway is not running. Please start it from the main window."
+  },
+  "commands": {
+    "categories": {
+      "general": "General",
+      "code": "Code",
+      "writing": "Writing",
+      "analysis": "Analysis"
+    },
+    "translate": {
+      "name": "Translate",
+      "description": "Translate clipboard text"
+    },
+    "translateTo": {
+      "name": "Translate To",
+      "description": "Translate to a specific language",
+      "inputPlaceholder": "Target language, e.g. Japanese..."
+    },
+    "summarize": {
+      "name": "Summarize",
+      "description": "Summarize clipboard content"
+    },
+    "explain": {
+      "name": "Explain",
+      "description": "Explain in simple terms"
+    },
+    "review": {
+      "name": "Code Review",
+      "description": "Review code for bugs and improvements"
+    },
+    "explainCode": {
+      "name": "Explain Code",
+      "description": "Explain code step by step"
+    },
+    "optimize": {
+      "name": "Optimize",
+      "description": "Optimize code for performance"
+    },
+    "rewrite": {
+      "name": "Rewrite",
+      "description": "Rewrite text in a specific style",
+      "inputPlaceholder": "Style, e.g. formal, casual..."
+    },
+    "fixGrammar": {
+      "name": "Fix Grammar",
+      "description": "Fix grammar and spelling"
+    },
+    "ask": {
+      "name": "Ask",
+      "description": "Ask a general question",
+      "inputPlaceholder": "Type your question..."
+    }
+  },
+  "fileSearch": {
+    "attachFile": "Attach File",
+    "searching": "Searching files...",
+    "noResults": "No files found",
+    "hint": "Type at least 2 characters to search..."
+  }
+}

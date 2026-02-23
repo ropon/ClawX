@@ -5,23 +5,16 @@
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
-// Mock window.electron API
-const mockElectron = {
-  ipcRenderer: {
-    invoke: vi.fn(),
-    on: vi.fn(),
-    once: vi.fn(),
-    off: vi.fn(),
-  },
-  openExternal: vi.fn(),
-  platform: 'darwin',
-  isDev: true,
-};
+// Mock @tauri-apps/api/core
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}));
 
-Object.defineProperty(window, 'electron', {
-  value: mockElectron,
-  writable: true,
-});
+// Mock @tauri-apps/api/event
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+  emit: vi.fn(),
+}));
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {

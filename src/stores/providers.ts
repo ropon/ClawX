@@ -3,6 +3,7 @@
  * Manages AI provider configurations
  */
 import { create } from 'zustand';
+import { invoke } from '@/lib/bridge';
 import type { ProviderConfig, ProviderWithKeyInfo } from '@/lib/providers';
 
 // Re-export types for consumers that imported from here
@@ -45,8 +46,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const providers = await window.electron.ipcRenderer.invoke('provider:list') as ProviderWithKeyInfo[];
-      const defaultId = await window.electron.ipcRenderer.invoke('provider:getDefault') as string | null;
+      const providers = await invoke('provider:list') as ProviderWithKeyInfo[];
+      const defaultId = await invoke('provider:getDefault') as string | null;
       
       set({ 
         providers, 
@@ -66,7 +67,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         updatedAt: new Date().toISOString(),
       };
       
-      const result = await window.electron.ipcRenderer.invoke('provider:save', fullConfig, apiKey) as { success: boolean; error?: string };
+      const result = await invoke('provider:save', fullConfig, apiKey) as { success: boolean; error?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to save provider');
@@ -95,7 +96,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         updatedAt: new Date().toISOString(),
       };
       
-      const result = await window.electron.ipcRenderer.invoke('provider:save', updatedConfig, apiKey) as { success: boolean; error?: string };
+      const result = await invoke('provider:save', updatedConfig, apiKey) as { success: boolean; error?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to update provider');
@@ -111,7 +112,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   
   deleteProvider: async (providerId) => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('provider:delete', providerId) as { success: boolean; error?: string };
+      const result = await invoke('provider:delete', providerId) as { success: boolean; error?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to delete provider');
@@ -127,7 +128,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   
   setApiKey: async (providerId, apiKey) => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('provider:setApiKey', providerId, apiKey) as { success: boolean; error?: string };
+      const result = await invoke('provider:setApiKey', providerId, apiKey) as { success: boolean; error?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to set API key');
@@ -143,7 +144,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
 
   updateProviderWithKey: async (providerId, updates, apiKey) => {
     try {
-      const result = await window.electron.ipcRenderer.invoke(
+      const result = await invoke(
         'provider:updateWithKey',
         providerId,
         updates,
@@ -163,7 +164,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   
   deleteApiKey: async (providerId) => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('provider:deleteApiKey', providerId) as { success: boolean; error?: string };
+      const result = await invoke('provider:deleteApiKey', providerId) as { success: boolean; error?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to delete API key');
@@ -179,7 +180,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   
   setDefaultProvider: async (providerId) => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('provider:setDefault', providerId) as { success: boolean; error?: string };
+      const result = await invoke('provider:setDefault', providerId) as { success: boolean; error?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to set default provider');
@@ -194,7 +195,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   
   validateApiKey: async (providerId, apiKey, options) => {
     try {
-      const result = await window.electron.ipcRenderer.invoke(
+      const result = await invoke(
         'provider:validateKey',
         providerId,
         apiKey,
@@ -208,7 +209,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   
   getApiKey: async (providerId) => {
     try {
-      return await window.electron.ipcRenderer.invoke('provider:getApiKey', providerId) as string | null;
+      return await invoke('provider:getApiKey', providerId) as string | null;
     } catch {
       return null;
     }

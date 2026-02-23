@@ -10,6 +10,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { invoke } from '@/lib/bridge';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -93,9 +94,9 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false }:
 
   const pickFiles = useCallback(async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('dialog:open', {
+      const result = await invoke<{ canceled: boolean; filePaths?: string[] }>('dialog:open', {
         properties: ['openFile', 'multiSelections'],
-      }) as { canceled: boolean; filePaths?: string[] };
+      });
       if (result.canceled || !result.filePaths?.length) return;
 
       // Add placeholder entries immediately
@@ -117,20 +118,17 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false }:
       }
 
       // Stage all files via IPC
-      console.log('[pickFiles] Staging files:', result.filePaths);
-      const staged = await window.electron.ipcRenderer.invoke(
-        'file:stage',
-        result.filePaths,
-      ) as Array<{
+      const staged = await invoke<Array<{
         id: string;
         fileName: string;
         mimeType: string;
         fileSize: number;
         stagedPath: string;
         preview: string | null;
-      }>;
-      console.log('[pickFiles] Stage result:', staged?.map(s => ({ id: s?.id, fileName: s?.fileName, mimeType: s?.mimeType, fileSize: s?.fileSize, stagedPath: s?.stagedPath, hasPreview: !!s?.preview })));
-
+      }>>(
+        'file:stage',
+        result.filePaths,
+      );
       // Update each placeholder with real data
       setAttachments(prev => {
         let updated = [...prev];
@@ -182,22 +180,19 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false }:
       }]);
 
       try {
-        console.log(`[stageBuffer] Reading file: ${file.name} (${file.type}, ${file.size} bytes)`);
         const base64 = await readFileAsBase64(file);
-        console.log(`[stageBuffer] Base64 length: ${base64?.length ?? 'null'}`);
-        const staged = await window.electron.ipcRenderer.invoke('file:stageBuffer', {
-          base64,
-          fileName: file.name,
-          mimeType: file.type || 'application/octet-stream',
-        }) as {
+        const staged = await invoke<{
           id: string;
           fileName: string;
           mimeType: string;
           fileSize: number;
           stagedPath: string;
           preview: string | null;
-        };
-        console.log(`[stageBuffer] Staged: id=${staged?.id}, path=${staged?.stagedPath}, size=${staged?.fileSize}`);
+        }>('file:stageBuffer', {
+          base64,
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+        });
         setAttachments(prev => prev.map(a =>
           a.id === tempId ? { ...staged, status: 'ready' as const } : a,
         ));
@@ -229,13 +224,6 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false }:
     // but keep attachments available for the async send
     const textToSend = input.trim();
     const attachmentsToSend = readyAttachments.length > 0 ? readyAttachments : undefined;
-    console.log(`[handleSend] text="${textToSend.substring(0, 50)}", attachments=${attachments.length}, ready=${readyAttachments.length}, sending=${!!attachmentsToSend}`);
-    if (attachmentsToSend) {
-      console.log('[handleSend] Attachment details:', attachmentsToSend.map(a => ({
-        id: a.id, fileName: a.fileName, mimeType: a.mimeType, fileSize: a.fileSize,
-        stagedPath: a.stagedPath, status: a.status, hasPreview: !!a.preview,
-      })));
-    }
     setInput('');
     setAttachments([]);
     if (textareaRef.current) {

@@ -10,6 +10,10 @@ import enChannels from './locales/en/channels.json';
 import enSkills from './locales/en/skills.json';
 import enCron from './locales/en/cron.json';
 import enSetup from './locales/en/setup.json';
+import enAgents from './locales/en/agents.json';
+import enSpotlight from './locales/en/spotlight.json';
+import enKnowledge from './locales/en/knowledge.json';
+import enWorkflows from './locales/en/workflows.json';
 
 // ZH
 import zhCommon from './locales/zh/common.json';
@@ -20,6 +24,10 @@ import zhChannels from './locales/zh/channels.json';
 import zhSkills from './locales/zh/skills.json';
 import zhCron from './locales/zh/cron.json';
 import zhSetup from './locales/zh/setup.json';
+import zhAgents from './locales/zh/agents.json';
+import zhSpotlight from './locales/zh/spotlight.json';
+import zhKnowledge from './locales/zh/knowledge.json';
+import zhWorkflows from './locales/zh/workflows.json';
 
 // JA
 import jaCommon from './locales/ja/common.json';
@@ -30,6 +38,10 @@ import jaChannels from './locales/ja/channels.json';
 import jaSkills from './locales/ja/skills.json';
 import jaCron from './locales/ja/cron.json';
 import jaSetup from './locales/ja/setup.json';
+import jaAgents from './locales/ja/agents.json';
+import jaSpotlight from './locales/ja/spotlight.json';
+import jaKnowledge from './locales/ja/knowledge.json';
+import jaWorkflows from './locales/ja/workflows.json';
 
 export const SUPPORTED_LANGUAGES = [
     { code: 'en', label: 'English' },
@@ -49,6 +61,10 @@ const resources = {
         skills: enSkills,
         cron: enCron,
         setup: enSetup,
+        agents: enAgents,
+        spotlight: enSpotlight,
+        knowledge: enKnowledge,
+        workflows: enWorkflows,
     },
     zh: {
         common: zhCommon,
@@ -59,6 +75,10 @@ const resources = {
         skills: zhSkills,
         cron: zhCron,
         setup: zhSetup,
+        agents: zhAgents,
+        spotlight: zhSpotlight,
+        knowledge: zhKnowledge,
+        workflows: zhWorkflows,
     },
     ja: {
         common: jaCommon,
@@ -69,6 +89,10 @@ const resources = {
         skills: jaSkills,
         cron: jaCron,
         setup: jaSetup,
+        agents: jaAgents,
+        spotlight: jaSpotlight,
+        knowledge: jaKnowledge,
+        workflows: jaWorkflows,
     },
 };
 
@@ -79,7 +103,7 @@ i18n
         lng: 'en', // will be overridden by settings store
         fallbackLng: 'en',
         defaultNS: 'common',
-        ns: ['common', 'settings', 'dashboard', 'chat', 'channels', 'skills', 'cron', 'setup'],
+        ns: ['common', 'settings', 'dashboard', 'chat', 'channels', 'skills', 'cron', 'setup', 'agents', 'spotlight', 'knowledge', 'workflows'],
         interpolation: {
             escapeValue: false, // React already escapes
         },
