@@ -396,6 +396,22 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
       gateway: { status: 'checking', message: '' },
     });
 
+    // Phase 0: ensure runtime is extracted (first run / after a ClawX update).
+    // Idempotent — short-circuits in dev and on already-up-to-date installs.
+    setChecks((prev) => ({
+      ...prev,
+      openclaw: { status: 'checking', message: t('runtime.openclawExtracting') },
+    }));
+    try {
+      await invoke('openclaw:ensure-installed');
+    } catch (error) {
+      setChecks((prev) => ({
+        ...prev,
+        openclaw: { status: 'error', message: `${t('runtime.openclawExtractFailed')}: ${error}` },
+      }));
+      return;
+    }
+
     // Check Node.js — required for Gateway
     setChecks((prev) => ({
       ...prev,

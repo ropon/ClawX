@@ -3,6 +3,7 @@
  * Application configuration
  */
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sun,
   Moon,
@@ -42,6 +43,7 @@ type ControlUiInfo = {
 
 export function Settings() {
   const { t } = useTranslation('settings');
+  const navigate = useNavigate();
   const {
     theme,
     setTheme,
@@ -585,6 +587,24 @@ export function Settings() {
               checked={devModeUnlocked}
               onCheckedChange={setDevModeUnlocked}
             />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label>{t('advanced.resetSetup')}</Label>
+              <p className="text-sm text-muted-foreground">
+                {t('advanced.resetSetupDesc')}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                useSettingsStore.getState().resetSetup();
+                navigate('/setup');
+              }}
+            >
+              {t('advanced.resetSetupBtn')}
+            </Button>
           </div>
         </CardContent>
       </Card>

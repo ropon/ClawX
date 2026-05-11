@@ -31,6 +31,7 @@ mod channel_config;
 // Week 6: Provider + Utility modules
 mod openclaw_auth;
 mod openclaw_paths;
+mod openclaw_install;
 mod provider_validate;
 mod file_staging;
 mod file_search;
@@ -174,8 +175,10 @@ async fn window_maximize(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn window_close(app: AppHandle) -> Result<(), String> {
+    // Hide instead of destroy so the tray "Show" entry can bring the window
+    // back. Real exit is via the tray "Quit" menu item (PredefinedMenuItem::quit).
     if let Some(w) = app.get_webview_window("main") {
-        w.close().map_err(|e| e.to_string())?;
+        w.hide().map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -304,6 +307,18 @@ async fn app_platform() -> Result<String, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .on_window_event(|window, event| {
+            // Intercept main-window close (macOS red dot, Windows X) — hide
+            // to tray instead of tearing down so the tray "Show" entry works
+            // and the app stays alive in the background. Tray "Quit" remains
+            // the real exit path.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -421,6 +436,7 @@ pub fn run() {
             commands::openclaw_cmd::openclaw_get_skills_dir,
             commands::openclaw_cmd::openclaw_get_cli_command,
             commands::openclaw_cmd::openclaw_install_cli_mac,
+            commands::openclaw_cmd::openclaw_ensure_installed,
             // Week 6: Log (5)
             commands::log_cmd::log_read_file,
             commands::log_cmd::log_get_file_path,

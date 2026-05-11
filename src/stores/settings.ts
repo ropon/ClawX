@@ -50,6 +50,7 @@ interface SettingsState {
   setSidebarCollapsed: (value: boolean) => void;
   setDevModeUnlocked: (value: boolean) => void;
   markSetupComplete: (version: string) => void;
+  resetSetup: () => void;
   checkSetupVersion: (currentVersion: string) => void;
   resetSettings: () => void;
 }
@@ -105,6 +106,7 @@ export const useSettingsStore = create<SettingsState>()(
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       setDevModeUnlocked: (devModeUnlocked) => set({ devModeUnlocked }),
       markSetupComplete: (version: string) => set({ setupComplete: true, setupVersion: version }),
+      resetSetup: () => set({ setupComplete: false, setupVersion: '' }),
       checkSetupVersion: (currentVersion: string) => {
         const { setupVersion, setupComplete } = useSettingsStore.getState();
         if (setupComplete && setupVersion !== currentVersion) {

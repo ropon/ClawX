@@ -60,7 +60,11 @@
       "icons/512x512.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": {
+      "../build/openclaw.tar.gz": "openclaw.tar.gz",
+      "../build/openclaw.version": "openclaw.version"
+    }
   },
   "plugins": {
     "updater": {

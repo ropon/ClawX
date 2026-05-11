@@ -100,7 +100,10 @@
         "title": "Advanced",
         "description": "Power-user options",
         "devMode": "Developer Mode",
-        "devModeDesc": "Show developer tools and shortcuts"
+        "devModeDesc": "Show developer tools and shortcuts",
+        "resetSetup": "Reset Onboarding",
+        "resetSetupDesc": "Re-run the first-launch setup wizard. Existing data and providers are preserved.",
+        "resetSetupBtn": "Reset"
     },
     "developer": {
         "title": "Developer",

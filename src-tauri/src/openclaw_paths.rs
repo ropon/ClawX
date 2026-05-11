@@ -36,20 +36,10 @@ pub fn get_openclaw_dir() -> String {
         }
     }
 
-    // 2. Packaged mode: adjacent to executable
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(exe_dir) = exe.parent() {
-            // macOS: ClawX.app/Contents/MacOS/ → Resources/openclaw
-            let resources = exe_dir.join("../Resources/openclaw");
-            if resources.join("package.json").exists() {
-                return resources.to_string_lossy().to_string();
-            }
-            // Flat layout: next to binary
-            let adjacent = exe_dir.join("openclaw");
-            if adjacent.join("package.json").exists() {
-                return adjacent.to_string_lossy().to_string();
-            }
-        }
+    // 2. Packaged mode: tar.gz extracted to ~/.openclaw/runtime/openclaw
+    let runtime = crate::openclaw_install::runtime_openclaw_dir();
+    if runtime.join("package.json").exists() {
+        return runtime.to_string_lossy().to_string();
     }
 
     // 3. Global install: ~/.openclaw/node_modules/openclaw
@@ -68,11 +58,8 @@ pub fn get_openclaw_dir() -> String {
         }
     }
 
-    // Fallback: return the build path for a helpful error message
-    if let Some(ref root) = project_root {
-        return root.join("build").join("openclaw").to_string_lossy().to_string();
-    }
-    global.to_string_lossy().to_string()
+    // Fallback: runtime path for a helpful error message
+    runtime.to_string_lossy().to_string()
 }
 
 /// Get OpenClaw entry script path

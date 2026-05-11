@@ -5,7 +5,7 @@
  *
  * Bundles the openclaw npm package with ALL its dependencies (including
  * transitive ones) into a self-contained directory (build/openclaw/) for
- * electron-builder to pick up.
+ * Tauri's bundle.resources to pick up.
  *
  * pnpm uses a content-addressable virtual store with symlinks. A naive copy
  * of node_modules/openclaw/ will miss runtime dependencies entirely. Even
@@ -14,15 +14,19 @@
  *
  * This script performs a recursive BFS through pnpm's virtual store to
  * collect every transitive dependency into a flat node_modules structure.
+ * It also prunes unnecessary files (type defs, source maps, docs, tests) to
+ * shrink the bundle and reduce macOS code-signing overhead — Tauri has no
+ * afterPack hook, so the cleanup must happen before Tauri copies resources.
  */
 
 import 'zx/globals';
+import crypto from 'node:crypto';
 
 const ROOT = path.resolve(__dirname, '..');
 const OUTPUT = path.join(ROOT, 'build', 'openclaw');
 const NODE_MODULES = path.join(ROOT, 'node_modules');
 
-echo`📦 Bundling openclaw for electron-builder...`;
+echo`📦 Bundling openclaw for Tauri resources...`;
 
 // 1. Resolve the real path of node_modules/openclaw (follows pnpm symlink)
 const openclawLink = path.join(NODE_MODULES, 'openclaw');
@@ -190,7 +194,108 @@ for (const [realPath, pkgName] of collected) {
   }
 }
 
-// 6. Verify the bundle
+// 6. Prune unnecessary files (type defs, source maps, docs, tests) to shrink
+// the bundle and reduce macOS code-signing overhead. Must happen here because
+// Tauri has no afterPack hook — the source must already be pruned before the
+// Tauri bundler copies it into Resources/.
+function cleanupUnnecessaryFiles(dir) {
+  let removedCount = 0;
+
+  function walk(currentDir) {
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+
+      if (entry.isDirectory()) {
+        if (entry.name === 'test' || entry.name === 'tests' ||
+            entry.name === '__tests__' || entry.name === '.github' ||
+            entry.name === 'docs' || entry.name === 'examples') {
+          try {
+            fs.rmSync(fullPath, { recursive: true, force: true });
+            removedCount++;
+          } catch {
+            // ignore
+          }
+        } else {
+          walk(fullPath);
+        }
+      } else if (entry.isFile()) {
+        const name = entry.name;
+        if (name.endsWith('.d.ts') || name.endsWith('.d.ts.map') ||
+            name.endsWith('.js.map') || name.endsWith('.mjs.map') ||
+            name.endsWith('.ts.map') || name === '.DS_Store' ||
+            name === 'README.md' || name === 'CHANGELOG.md' ||
+            name === 'LICENSE.md' || name === 'CONTRIBUTING.md' ||
+            name.endsWith('.md.txt') || name.endsWith('.markdown') ||
+            name === 'tsconfig.json' || name === '.npmignore' ||
+            name === '.eslintrc' || name === '.prettierrc') {
+          try {
+            fs.rmSync(fullPath, { force: true });
+            removedCount++;
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  }
+
+  walk(dir);
+  return removedCount;
+}
+
+echo`   Pruning type defs, source maps, docs, tests...`;
+const removedCount = cleanupUnnecessaryFiles(OUTPUT);
+echo`   Pruned ${removedCount} files/directories`;
+
+// 7. Filter koffi multi-platform native binaries. pnpm already filters
+// optionalDeps-style packages (@napi-rs/canvas, @img/sharp, ...) per host;
+// koffi ships all 18 platform binaries inside build/koffi/<arch>/, so we
+// strip the ones we don't need.
+const KOFFI_PLATFORM_MAP = {
+  'darwin-arm64': 'darwin_arm64',
+  'darwin-x64':   'darwin_x64',
+  'linux-arm64':  'linux_arm64',
+  'linux-x64':    'linux_x64',
+  'win32-arm64':  'win32_arm64',
+  'win32-x64':    'win32_x64',
+};
+const hostKey = `${process.platform}-${process.arch}`;
+const koffiKeep = KOFFI_PLATFORM_MAP[hostKey];
+const koffiBase = path.join(OUTPUT, 'node_modules', 'koffi', 'build', 'koffi');
+if (koffiKeep && fs.existsSync(koffiBase)) {
+  let dropped = 0;
+  for (const entry of fs.readdirSync(koffiBase)) {
+    if (entry !== koffiKeep) {
+      fs.rmSync(path.join(koffiBase, entry), { recursive: true, force: true });
+      dropped++;
+    }
+  }
+  echo`   Filtered koffi → kept ${koffiKeep}, dropped ${dropped} platforms`;
+} else if (!koffiKeep) {
+  echo`   ⚠️  Unknown host ${hostKey}; leaving koffi platforms untouched`;
+}
+
+// 8. Write version fingerprint (openclaw version + bundle-time short hash)
+// used by the Rust extractor to decide if re-extraction is needed.
+const openclawPkg = JSON.parse(fs.readFileSync(path.join(OUTPUT, 'package.json'), 'utf8'));
+const bundleId = `${openclawPkg.version}-${crypto.createHash('sha1').update(String(Date.now())).digest('hex').slice(0, 8)}`;
+const versionPath = path.join(ROOT, 'build', 'openclaw.version');
+fs.writeFileSync(versionPath, bundleId, 'utf8');
+echo`   Wrote version: ${bundleId}`;
+
+// 9. Tar+gzip into a single resource. Using the system tar (BSD/GNU compatible
+// flags) — present on macOS/Linux and Win10 1809+. CI on older Windows would
+// need to switch to a Node tar package.
+const archivePath = path.join(ROOT, 'build', 'openclaw.tar.gz');
+if (fs.existsSync(archivePath)) fs.rmSync(archivePath, { force: true });
+echo`   Creating openclaw.tar.gz...`;
+await $`tar -czf ${archivePath} -C ${path.join(ROOT, 'build')} openclaw`;
+const archiveSize = (fs.statSync(archivePath).size / (1024 * 1024)).toFixed(1);
+echo`   ✓ openclaw.tar.gz ready (${archiveSize} MB)`;
+
+// 10. Verify the bundle
 const entryExists = fs.existsSync(path.join(OUTPUT, 'openclaw.mjs'));
 const distExists = fs.existsSync(path.join(OUTPUT, 'dist', 'entry.js'));
 
@@ -201,6 +306,7 @@ echo`   Duplicate versions skipped: ${skippedDupes}`;
 echo`   Total discovered: ${collected.size}`;
 echo`   openclaw.mjs: ${entryExists ? '✓' : '✗'}`;
 echo`   dist/entry.js: ${distExists ? '✓' : '✗'}`;
+echo`   openclaw.tar.gz: ${archiveSize} MB`;
 
 if (!entryExists || !distExists) {
   echo`❌ Bundle verification failed!`;

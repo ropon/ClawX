@@ -50,6 +50,8 @@
             "gatewayRunning": "Running on port {{port}}",
             "packageReady": "OpenClaw package ready"
         },
+        "openclawExtracting": "Extracting OpenClaw runtime...",
+        "openclawExtractFailed": "OpenClaw extract failed",
         "issue": {
             "title": "Environment issue detected",
             "desc": "Please ensure OpenClaw is properly installed. Check the logs for details."

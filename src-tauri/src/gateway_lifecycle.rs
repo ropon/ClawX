@@ -90,6 +90,34 @@ impl GatewayProcessManager {
 
         // Phase 2: Spawning — prepare and launch Gateway process
         let elapsed = start_time.elapsed().as_millis() as u64;
+        emit_progress(app, "spawning", "Preparing OpenClaw runtime...", elapsed, 10);
+
+        // Ensure openclaw runtime is extracted before resolving entry path.
+        // First launch / after a ClawX update will block here for ~3-5 s while
+        // ~/.openclaw/runtime/openclaw is unpacked from the bundled tar.gz.
+        let app_clone = app.clone();
+        match tokio::task::spawn_blocking(move || {
+            crate::openclaw_install::ensure_installed(&app_clone)
+        }).await {
+            Ok(Ok(_)) => {}
+            Ok(Err(e)) => {
+                self.status = GatewayStatus::Error(format!("openclaw extract: {e}"));
+                let elapsed = start_time.elapsed().as_millis() as u64;
+                emit_progress(app, "failed", &format!("OpenClaw extract failed: {e}"), elapsed, 0);
+                emit_status(app, "error");
+                return Err(format!("OpenClaw extract failed: {e}"));
+            }
+            Err(e) => {
+                let msg = format!("extract task: {e}");
+                self.status = GatewayStatus::Error(msg.clone());
+                let elapsed = start_time.elapsed().as_millis() as u64;
+                emit_progress(app, "failed", &msg, elapsed, 0);
+                emit_status(app, "error");
+                return Err(msg);
+            }
+        }
+
+        let elapsed = start_time.elapsed().as_millis() as u64;
         emit_progress(app, "spawning", "Launching Gateway process...", elapsed, 15);
 
         let entry_path = openclaw_paths::get_openclaw_entry_path();

@@ -50,6 +50,8 @@
             "gatewayRunning": "ポート {{port}} で実行中",
             "packageReady": "OpenClaw パッケージ準備完了"
         },
+        "openclawExtracting": "OpenClaw ランタイムを展開中...",
+        "openclawExtractFailed": "OpenClaw の展開に失敗しました",
         "issue": {
             "title": "環境の問題が検出されました",
             "desc": "OpenClawが正しくインストールされていることを確認してください。詳細はログを確認してください。"

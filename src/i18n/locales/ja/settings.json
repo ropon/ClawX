@@ -100,7 +100,10 @@
         "title": "詳細設定",
         "description": "上級ユーザー向けオプション",
         "devMode": "開発者モード",
-        "devModeDesc": "開発者ツールとショートカットを表示"
+        "devModeDesc": "開発者ツールとショートカットを表示",
+        "resetSetup": "オンボーディングをリセット",
+        "resetSetupDesc": "初回起動時のセットアップウィザードを再実行します。既存のデータとプロバイダー設定は保持されます。",
+        "resetSetupBtn": "リセット"
     },
     "developer": {
         "title": "開発者",

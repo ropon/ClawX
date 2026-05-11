@@ -57,5 +57,9 @@ notify = { version = "6", features = ["macos_fsevent"] }
 cron = "0.12"
 regex = "1"
 
+# OpenClaw runtime extraction (tar.gz on first launch)
+flate2 = "1"
+tar = "0.4"
+
 [dev-dependencies]
 tempfile = "3"

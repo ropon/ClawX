@@ -100,7 +100,10 @@
         "title": "高级",
         "description": "高级选项",
         "devMode": "开发者模式",
-        "devModeDesc": "显示开发者工具和快捷方式"
+        "devModeDesc": "显示开发者工具和快捷方式",
+        "resetSetup": "重新引导",
+        "resetSetupDesc": "重新运行首次启动的引导向导。已有的数据和提供商配置会保留。",
+        "resetSetupBtn": "重置"
     },
     "developer": {
         "title": "开发者",

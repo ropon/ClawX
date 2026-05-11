@@ -1,6 +1,7 @@
-// OpenClaw commands (7)
-// Handles openclaw:status/isReady/getDir/getConfigDir/getSkillsDir/getCliCommand/installCliMac
+// OpenClaw commands (8)
+// Handles openclaw:status/isReady/getDir/getConfigDir/getSkillsDir/getCliCommand/installCliMac/ensureInstalled
 
+use crate::openclaw_install;
 use crate::openclaw_paths;
 use serde_json::{json, Value};
 use std::fs;
@@ -125,4 +126,10 @@ pub async fn openclaw_install_cli_mac(_args: Vec<Value>) -> Result<Value, String
         "success": true,
         "path": target.to_string_lossy(),
     }))
+}
+
+#[tauri::command]
+pub async fn openclaw_ensure_installed(app: tauri::AppHandle, _args: Vec<Value>) -> Result<Value, String> {
+    let path = openclaw_install::ensure_installed(&app)?;
+    Ok(json!({ "success": true, "path": path.to_string_lossy() }))
 }
