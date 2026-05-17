@@ -17,6 +17,7 @@ import { handleFileRoutes } from './routes/files';
 import { handleSessionRoutes } from './routes/sessions';
 import { handleCronRoutes } from './routes/cron';
 import { handleDiagnosticsRoutes } from './routes/diagnostics';
+import { handleAuthRoutes } from './routes/auth';
 import { sendJson, setCorsHeaders, requireJsonContentType } from './route-utils';
 
 type RouteHandler = (
@@ -40,6 +41,7 @@ const coreRouteHandlers: RouteHandler[] = [
   handleDiagnosticsRoutes,
   handleLogRoutes,
   handleUsageRoutes,
+  handleAuthRoutes,
 ];
 
 function buildRouteHandlers(): RouteHandler[] {
@@ -61,7 +63,7 @@ export function getHostApiToken(): string {
   return hostApiToken;
 }
 
-export function startHostApiServer(ctx: HostApiContext, port = getPort('CLAWX_HOST_API')): Server {
+export function startHostApiServer(ctx: HostApiContext, port = getPort('ONECLAW_HOST_API')): Server {
   // Generate a cryptographically random token for this session.
   hostApiToken = randomBytes(32).toString('hex');
 
@@ -120,7 +122,7 @@ export function startHostApiServer(ctx: HostApiContext, port = getPort('CLAWX_HO
       logger.error(
         `Host API server failed to bind port ${port}: ${error.message}. ` +
         'On Windows this is often caused by Hyper-V reserving the port range. ' +
-        `Set CLAWX_PORT_CLAWX_HOST_API env var to override the default port.`,
+        `Set ONECLAW_PORT_ONECLAW_HOST_API env var to override the default port.`,
       );
     } else {
       logger.error('Host API server error:', error);

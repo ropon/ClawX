@@ -11,7 +11,7 @@ function stableStringify(value: unknown): string {
   return `{${entries.join(',')}}`;
 }
 
-test.describe('ClawX chat session date grouping', () => {
+test.describe('OneClaw chat session date grouping', () => {
   test('new chat appears in the Today session bucket', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
     const oldTimestampMs = Date.now() - 35 * 24 * 60 * 60 * 1000;

@@ -17,23 +17,23 @@ function quoteTomlString(value: string): string {
   return JSON.stringify(value);
 }
 
-function buildClawXUvConfigToml(): string {
+function buildOneClawUvConfigToml(): string {
   return [
-    '# This file is managed by ClawX.',
-    '# It lets uv use ClawX-selected mirrors even when host exec filters UV_INDEX_URL.',
+    '# This file is managed by OneClaw.',
+    '# It lets uv use OneClaw-selected mirrors even when host exec filters UV_INDEX_URL.',
     `index-url = ${quoteTomlString(UV_INDEX_URL)}`,
     `python-install-mirror = ${quoteTomlString(UV_PYTHON_INSTALL_MIRROR_URL)}`,
     '',
   ].join('\n');
 }
 
-export function getClawXUvConfigFilePath(): string {
-  return path.join(getOpenClawConfigDir(), 'clawx', 'uv.toml');
+export function getOneClawUvConfigFilePath(): string {
+  return path.join(getOpenClawConfigDir(), 'oneclaw', 'uv.toml');
 }
 
-function ensureClawXUvConfigFile(): string | null {
-  const filePath = getClawXUvConfigFilePath();
-  const content = buildClawXUvConfigToml();
+function ensureOneClawUvConfigFile(): string | null {
+  const filePath = getOneClawUvConfigFilePath();
+  const content = buildOneClawUvConfigToml();
 
   try {
     mkdirSync(path.dirname(filePath), { recursive: true });
@@ -42,7 +42,7 @@ function ensureClawXUvConfigFile(): string | null {
     }
     return filePath;
   } catch (err) {
-    logger.warn('Failed to write ClawX uv config file:', err);
+    logger.warn('Failed to write OneClaw uv config file:', err);
     return null;
   }
 }
@@ -150,7 +150,7 @@ export async function getUvMirrorEnv(): Promise<Record<string, string>> {
   const isOptimized = await shouldOptimizeNetwork();
   if (!isOptimized) return {};
 
-  const uvConfigFile = ensureClawXUvConfigFile();
+  const uvConfigFile = ensureOneClawUvConfigFile();
   return uvConfigFile
     ? { ...UV_MIRROR_ENV, UV_CONFIG_FILE: uvConfigFile }
     : { ...UV_MIRROR_ENV };

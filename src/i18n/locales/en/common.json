@@ -61,5 +61,19 @@
         "notRunning": "Gateway Not Running",
         "notRunningDesc": "The OpenClaw Gateway needs to be running to use this feature. It will start automatically, or you can start it from Settings.",
         "warning": "Gateway is not running."
+    },
+    "auth": {
+        "loginTitle": "Sign in to OneClaw",
+        "email": "Email",
+        "emailPlaceholder": "Enter your email",
+        "password": "Password",
+        "passwordPlaceholder": "Enter your password",
+        "login": "Sign In",
+        "loginFailed": "Login failed. Please check your credentials.",
+        "noAccount": "Don't have an account?",
+        "signUp": "Sign up",
+        "logout": "Sign Out",
+        "loggedInAs": "Signed in as {{email}}",
+        "autoConfiguring": "Configuring AI providers from your account..."
     }
 }

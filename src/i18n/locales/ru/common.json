@@ -61,5 +61,19 @@
         "notRunning": "Шлюз не запущен",
         "notRunningDesc": "Для использования этой функции требуется запущенный шлюз OpenClaw. Он запустится автоматически, или вы можете запустить его в Настройках.",
         "warning": "Шлюз не запущен."
+    },
+    "auth": {
+        "loginTitle": "Войти в OneClaw",
+        "email": "Email",
+        "emailPlaceholder": "Введите email",
+        "password": "Пароль",
+        "passwordPlaceholder": "Введите пароль",
+        "login": "Войти",
+        "loginFailed": "Ошибка входа. Проверьте учетные данные.",
+        "noAccount": "Нет аккаунта?",
+        "signUp": "Регистрация",
+        "logout": "Выйти",
+        "loggedInAs": "Вошли как {{email}}",
+        "autoConfiguring": "Настройка AI провайдеров из вашего аккаунта..."
     }
 }

@@ -66,7 +66,7 @@ const attachedFileHistory = [
   },
 ];
 
-test.describe('ClawX chat file changes', () => {
+test.describe('OneClaw chat file changes', () => {
   test('shows line stats on generated file cards', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
 

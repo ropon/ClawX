@@ -2,7 +2,7 @@
  * Read-only image viewer with fit-to-window + click-to-zoom toggle.
  *
  * Renders the image directly off the disk via `file://` so we don't need
- * to base64-encode it through IPC. clawx's renderer already loads via
+ * to base64-encode it through IPC. oneclaw's renderer already loads via
  * file:// in production so the protocol is allowlisted.
  */
 import { useState } from 'react';

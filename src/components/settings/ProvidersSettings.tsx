@@ -964,7 +964,7 @@ interface AddProviderDialogProps {
   devModeUnlocked: boolean;
 }
 
-function AddProviderDialog({
+export function AddProviderDialog({
   existingVendorIds,
   vendors,
   onClose,

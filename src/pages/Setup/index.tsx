@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   XCircle,
   ExternalLink,
+  Plus,
 } from 'lucide-react';
 import { TitleBar } from '@/components/layout/TitleBar';
 import { Button } from '@/components/ui/button';
@@ -22,12 +23,19 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { useGatewayStore } from '@/stores/gateway';
 import { useSettingsStore } from '@/stores/settings';
+import { useProviderStore, type ProviderAccount } from '@/stores/providers';
+import type { ProviderType } from '@/lib/providers';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { toast } from 'sonner';
 import { invokeIpc } from '@/lib/api-client';
 import { hostApiFetch } from '@/lib/host-api';
+import { getProviderIconUrl } from '@/lib/providers';
+import { buildProviderAccountId } from '@/lib/provider-accounts';
+import { AddProviderDialog } from '@/components/settings/ProvidersSettings';
+import { LoginModal } from '@/components/auth/LoginModal';
+import { useAuthStore } from '@/stores/auth';
 
 interface SetupStep {
   id: string;
@@ -39,7 +47,8 @@ const STEP = {
   WELCOME: 0,
   RUNTIME: 1,
   INSTALLING: 2,
-  COMPLETE: 3,
+  PROVIDER: 3,  // NEW: AI Provider configuration
+  COMPLETE: 4,
 } as const;
 
 const getSteps = (t: TFunction): SetupStep[] => [
@@ -57,6 +66,11 @@ const getSteps = (t: TFunction): SetupStep[] => [
     id: 'installing',
     title: t('steps.installing.title'),
     description: t('steps.installing.description'),
+  },
+  {
+    id: 'provider',
+    title: t('steps.provider.title'),
+    description: t('steps.provider.description'),
   },
   {
     id: 'complete',
@@ -80,7 +94,7 @@ const getDefaultSkills = (t: TFunction): DefaultSkill[] => [
   { id: 'terminal', name: t('defaultSkills.terminal.name'), description: t('defaultSkills.terminal.description') },
 ];
 
-import clawxIcon from '@/assets/logo.svg';
+import oneclawIcon from '@/assets/logo.svg';
 
 // NOTE: Channel types moved to Settings > Channels page
 // NOTE: Skill bundles moved to Settings > Skills page - auto-install essential skills during setup
@@ -95,6 +109,9 @@ export function Setup() {
   const [installedSkills, setInstalledSkills] = useState<string[]>([]);
   // Runtime check status
   const [runtimeChecksPassed, setRuntimeChecksPassed] = useState(false);
+
+  // Provider check status
+  const [providerConfigured, setProviderConfigured] = useState(false);
 
   const steps = getSteps(t);
   const safeStepIndex = Number.isInteger(currentStep)
@@ -115,12 +132,14 @@ export function Setup() {
         return runtimeChecksPassed;
       case STEP.INSTALLING:
         return false; // Cannot manually proceed, auto-proceeds when done
+      case STEP.PROVIDER:
+        return providerConfigured;
       case STEP.COMPLETE:
         return true;
       default:
         return true;
     }
-  }, [safeStepIndex, runtimeChecksPassed]);
+  }, [safeStepIndex, runtimeChecksPassed, providerConfigured]);
 
   const handleNext = async () => {
     if (isLastStep) {
@@ -215,6 +234,9 @@ export function Setup() {
                   onSkip={() => setCurrentStep((i) => i + 1)}
                 />
               )}
+              {safeStepIndex === STEP.PROVIDER && (
+                <ProviderContent onStatusChange={setProviderConfigured} />
+              )}
               {safeStepIndex === STEP.COMPLETE && (
                 <CompleteContent
                   installedSkills={installedSkills}
@@ -268,7 +290,7 @@ function WelcomeContent() {
   return (
     <div data-testid="setup-welcome-step" className="text-center space-y-4">
       <div className="mb-4 flex justify-center">
-        <img src={clawxIcon} alt="ClawX" className="h-16 w-16" />
+        <img src={oneclawIcon} alt="OneClaw" className="h-16 w-16" />
       </div>
       <h2 className="text-xl font-semibold">{t('welcome.title')}</h2>
       <p className="text-muted-foreground">
@@ -639,8 +661,292 @@ function RuntimeContent({ onStatusChange }: RuntimeContentProps) {
   );
 }
 
-// NOTE: ProviderContent component removed - configure providers via Settings > AI Providers
+// NOTE: ProviderContent component - configure providers during setup
+// Reuses AddProviderDialog from ProvidersSettings for consistent UI
+interface ProviderContentProps {
+  onStatusChange: (configured: boolean) => void;
+}
 
+function ProviderContent({ onStatusChange }: ProviderContentProps) {
+  const { t } = useTranslation('setup');
+  const {
+    accounts,
+    statuses,
+    vendors,
+    loading,
+    refreshProviderSnapshot,
+    createAccount,
+    setDefaultAccount,
+    validateAccountApiKey,
+  } = useProviderStore();
+  const devModeUnlocked = useSettingsStore((s) => s.devModeUnlocked);
+
+  const [checking, setChecking] = useState(true);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [autoConfiguring, setAutoConfiguring] = useState(false);
+
+  const { isAuthenticated, user, fetchAndAutoConfigureProviders } = useAuthStore();
+
+  // Initialize provider data on mount and check auth
+  useEffect(() => {
+    refreshProviderSnapshot();
+    useAuthStore.getState().checkAuth();
+  }, [refreshProviderSnapshot]);
+
+  // Auto-configure providers from server after login
+  const handleAutoConfigure = useCallback(async () => {
+    setAutoConfiguring(true);
+    try {
+      const result = await fetchAndAutoConfigureProviders();
+      if (result.success && result.providers) {
+        for (const provider of result.providers) {
+          const vendor = vendors.find((v) => v.id === provider.vendorId);
+          const id = buildProviderAccountId(provider.vendorId as ProviderType, null, vendors);
+          try {
+            await createAccount(
+              {
+                id,
+                vendorId: provider.vendorId as ProviderType,
+                label: provider.label || `${vendor?.name || provider.vendorId} (account)`,
+                authMode: 'api_key',
+                baseUrl: provider.baseUrl,
+                model: provider.model,
+                enabled: true,
+                isDefault: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+              provider.apiKey,
+            );
+          } catch {
+            // Skip duplicate provider, continue with others
+          }
+        }
+        // Auto-set first provider as default
+        if (result.providers.length > 0) {
+          const state = useProviderStore.getState();
+          if (state.accounts.length >= 1 && !state.defaultAccountId) {
+            try {
+              const firstId = buildProviderAccountId(result.providers[0].vendorId as ProviderType, null, vendors);
+              await setDefaultAccount(firstId);
+            } catch {
+              // non-critical
+            }
+          }
+        }
+        await refreshProviderSnapshot();
+        onStatusChange(true);
+      }
+    } catch {
+      // Non-critical — user can manually configure
+    } finally {
+      setAutoConfiguring(false);
+    }
+  }, [vendors, createAccount, setDefaultAccount, refreshProviderSnapshot, fetchAndAutoConfigureProviders, onStatusChange]);
+
+  // Determine if any provider is ready to use
+  useEffect(() => {
+    if (loading && !autoConfiguring) return;
+
+    // If logged in and no auto-config happened yet, trigger it
+    if (isAuthenticated && !autoConfiguring) {
+      handleAutoConfigure();
+      setChecking(false);
+      return;
+    }
+
+    const hasConfigured = statuses?.some((s) => s.hasKey);
+    if (hasConfigured) {
+      onStatusChange(true);
+    }
+    if (!autoConfiguring) {
+      setChecking(false);
+    }
+  }, [loading, statuses, isAuthenticated, autoConfiguring, onStatusChange, handleAutoConfigure]);
+
+  // Re-check when accounts change (after add/delete)
+  useEffect(() => {
+    if (!checking && accounts.length > 0) {
+      const hasConfigured = statuses?.some((s) => s.hasKey);
+      if (hasConfigured) {
+        onStatusChange(true);
+      }
+    }
+  }, [accounts, statuses, checking, onStatusChange]);
+
+  const handleAddProvider = async (
+    type: string,
+    name: string,
+    apiKey: string,
+    options?: {
+      baseUrl?: string;
+      model?: string;
+      authMode?: ProviderAccount['authMode'];
+      apiProtocol?: ProviderAccount['apiProtocol'];
+      headers?: Record<string, string>;
+    },
+  ) => {
+    const vendor = vendors.find((v) => v.id === type);
+    const id = buildProviderAccountId(type as ProviderType, null, vendors);
+
+    await createAccount(
+      {
+        id,
+        vendorId: type as ProviderType,
+        label: name,
+        authMode: options?.authMode || vendor?.defaultAuthMode || (type === 'ollama' ? 'local' : 'api_key'),
+        baseUrl: options?.baseUrl,
+        apiProtocol: options?.apiProtocol,
+        headers: options?.headers,
+        model: options?.model,
+        enabled: true,
+        isDefault: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      apiKey,
+    );
+
+    // Auto-set as default if no default is currently configured
+    if (accounts.length === 0) {
+      try {
+        await setDefaultAccount(id);
+      } catch {
+        // non-critical
+      }
+    }
+
+    await refreshProviderSnapshot();
+    setShowAddDialog(false);
+    toast.success(t('provider.configured'));
+  };
+
+  const existingVendorIds = new Set(accounts.map((a) => a.vendorId));
+
+  if (checking || loading) {
+    return (
+      <div className="text-center space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+        <p className="text-muted-foreground">{t('provider.checking')}</p>
+      </div>
+    );
+  }
+
+  // Already has a configured provider — ready to go
+  const hasConfigured = statuses?.some((s) => s.hasKey);
+  if (hasConfigured) {
+    return (
+      <div className="text-center space-y-4">
+        <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto" />
+        <h2 className="text-xl font-semibold">{t('provider.readyTitle')}</h2>
+        <p className="text-muted-foreground">{t('provider.readyDesc')}</p>
+      </div>
+    );
+  }
+
+  // No provider yet — show current providers list + add button
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="text-5xl mb-4">🤖</div>
+        <h2 className="text-xl font-semibold">{t('provider.title')}</h2>
+        <p className="text-muted-foreground max-w-md mx-auto">{t('provider.description')}</p>
+      </div>
+
+      {/* Existing provider accounts (without valid keys) */}
+      {accounts.length > 0 && (
+        <div className="space-y-2 max-w-md mx-auto">
+          {accounts.map((account) => {
+            const vendor = vendors.find((v) => v.id === account.vendorId);
+            const status = statuses.find((s) => s.id === account.id);
+            return (
+              <div
+                key={account.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  {getProviderIconUrl(account.vendorId) ? (
+                    <img src={getProviderIconUrl(account.vendorId)} alt="" className="h-6 w-6" />
+                  ) : (
+                    <span className="text-lg">{vendor?.icon || '⚙️'}</span>
+                  )}
+                  <div>
+                    <p className="font-medium text-sm">{account.label}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{vendor?.name || account.vendorId}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {status?.hasKey ? (
+                    <span className="text-xs text-green-400 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Configured
+                    </span>
+                  ) : (
+                    <span className="text-xs text-yellow-400 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {t('provider.noKey', 'No key')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Show user info when authenticated */}
+      {isAuthenticated && user && (
+        <div className="text-center text-sm text-muted-foreground">
+          {t('provider.loggedInAs', { email: user.email })}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 max-w-sm mx-auto">
+        {/* Login button — shown when not authenticated yet */}
+        {!isAuthenticated && (
+          <Button onClick={() => setShowLoginModal(true)} className="w-full" variant="secondary">
+            {t('provider.login')}
+          </Button>
+        )}
+
+        <Button onClick={() => setShowAddDialog(true)} className="w-full">
+          <Plus className="h-4 w-4 mr-2" />
+          {t('provider.configure')}
+        </Button>
+
+        <Button variant="ghost" onClick={() => onStatusChange(true)} className="w-full">
+          {t('provider.skipForNow')}
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        {t('provider.skipHint')}
+      </p>
+
+      {/* Add Provider Modal */}
+      {showAddDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowAddDialog(false)}>
+          <div className="bg-card rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <AddProviderDialog
+              existingVendorIds={existingVendorIds}
+              vendors={vendors}
+              onClose={() => setShowAddDialog(false)}
+              onAdd={handleAddProvider}
+              onValidateKey={(type, key, options) => validateAccountApiKey(type, key, options)}
+              devModeUnlocked={devModeUnlocked}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleAutoConfigure}
+      />
+    </div>
+  );
+}
 
 // Installation status for each skill
 type InstallStatus = 'pending' | 'installing' | 'completed' | 'failed';

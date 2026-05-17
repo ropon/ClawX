@@ -1,7 +1,7 @@
 {
     "steps": {
         "welcome": {
-            "title": "ClawXへようこそ",
+            "title": "OneClawへようこそ",
             "description": "AIアシスタントの設定準備が整いました"
         },
         "runtime": {
@@ -22,12 +22,12 @@
         },
         "complete": {
             "title": "完了！",
-            "description": "ClawXを使用する準備が整いました"
+            "description": "OneClawを使用する準備が整いました"
         }
     },
     "welcome": {
-        "title": "ClawXへようこそ",
-        "description": "ClawXはOpenClawのグラフィカルインターフェースで、お気に入りのメッセージングプラットフォームでAIアシスタントを簡単に使用できます。",
+        "title": "OneClawへようこそ",
+        "description": "OneClawはOpenClawのグラフィカルインターフェースで、お気に入りのメッセージングプラットフォームでAIアシスタントを簡単に使用できます。",
         "features": {
             "noCommand": "コマンドライン不要",
             "modernUI": "モダンで美しいインターフェース",
@@ -83,7 +83,23 @@
         "validateSave": "検証して保存",
         "valid": "プロバイダーが正常に構成されました",
         "invalid": "無効な API キー",
-        "storedLocally": "API キーはローカルマシンに保存されます。"
+        "storedLocally": "API キーはローカルマシンに保存されます。",
+        "title": "AI プロバイダー",
+        "description": "AIサービスプロバイダーを設定してチャットを開始します",
+        "checking": "利用可能なプロバイダーを確認中...",
+        "readyTitle": "プロバイダーの準備完了",
+        "readyDesc": "AIプロバイダーが構成されています",
+        "configure": "プロバイダーを設定",
+        "configureTitle": "AIプロバイダーの設定",
+        "configureDesc": "プロバイダーを選択し、APIキーを入力してください",
+        "skipForNow": "後で設定",
+        "skipHint": "後で設定 > AIプロバイダー から設定できます",
+        "vendor": "プロバイダー",
+        "apiKeyPlaceholder": "APIキーを入力してください",
+        "login": "ログイン（自動設定）",
+        "saveConfiguration": "設定を保存",
+        "configured": "プロバイダー設定済み",
+        "loggedInAs": "{{email}} としてログイン中"
     },
     "channel": {
         "title": "メッセージングチャンネルを接続",
@@ -113,7 +129,7 @@
     },
     "complete": {
         "title": "セットアップ完了！",
-        "subtitle": "ClawXの構成が完了し、使用準備が整いました。AIアシスタントとのチャットを開始できます。",
+        "subtitle": "OneClawの構成が完了し、使用準備が整いました。AIアシスタントとのチャットを開始できます。",
         "provider": "AI プロバイダー",
         "components": "コンポーネント",
         "gateway": "ゲートウェイ",

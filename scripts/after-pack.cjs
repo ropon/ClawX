@@ -354,7 +354,7 @@ function patchBrokenModules(nodeModulesDir) {
               const patched = [
                 original,
                 '',
-                '// ClawX patch: add LRUCache named export for Node.js 22+ ESM interop',
+                '// OneClaw patch: add LRUCache named export for Node.js 22+ ESM interop',
                 'if (typeof module.exports === "function" && !module.exports.LRUCache) {',
                 '  module.exports.LRUCache = module.exports;',
                 '}',
@@ -640,7 +640,7 @@ exports.default = async function afterPack(context) {
   //     the top-level node_modules/ as well.
   const buildExtDir = join(__dirname, '..', 'build', 'openclaw', 'dist', 'extensions');
   const packExtDir = join(openclawRoot, 'dist', 'extensions');
-  // ClawX always uses the official @larksuite/openclaw-lark plugin for Feishu.
+  // OneClaw always uses the official @larksuite/openclaw-lark plugin for Feishu.
   // The built-in openclaw dist/extensions/feishu tree is redundant, and on macOS
   // its mirrored runtime deps significantly increase codesign file pressure.
   rmSync(join(packExtDir, 'feishu'), { recursive: true, force: true });
@@ -816,7 +816,7 @@ exports.default = async function afterPack(context) {
               const patched = [
                 original,
                 '',
-                '// ClawX patch: add LRUCache named export for Node.js 22+ ESM interop',
+                '// OneClaw patch: add LRUCache named export for Node.js 22+ ESM interop',
                 'if (typeof module.exports === "function" && !module.exports.LRUCache) {',
                 '  module.exports.LRUCache = module.exports;',
                 '}',
@@ -877,14 +877,14 @@ exports.default = async function afterPack(context) {
       const original = readFS(extractNsh, 'utf8');
 
       // Only patch once (idempotent check)
-      if (original.includes('CopyFiles') && !original.includes('ClawX-patched')) {
+      if (original.includes('CopyFiles') && !original.includes('OneClaw-patched')) {
         // Replace the extractUsing7za macro body with a direct extraction.
         // Keep the macro signature so the rest of the template compiles unchanged.
         const patched = original.replace(
           /(!macro extractUsing7za FILE[\s\S]*?!macroend)/,
           [
             '!macro extractUsing7za FILE',
-            '  ; ClawX-patched: extract directly to $INSTDIR (skip temp + CopyFiles).',
+            '  ; OneClaw-patched: extract directly to $INSTDIR (skip temp + CopyFiles).',
             '  ; customCheckAppRunning already renamed old $INSTDIR to _stale_X,',
             '  ; so the target directory is always empty.  Nsis7z streams LZMA2 data',
             '  ; directly to disk — ~10s vs 3-5 min for CopyFiles with Windows Defender.',
@@ -899,7 +899,7 @@ exports.default = async function afterPack(context) {
         } else {
           console.warn('[after-pack] ⚠️  extractAppPackage.nsh regex did not match — template may have changed.');
         }
-      } else if (original.includes('ClawX-patched')) {
+      } else if (original.includes('OneClaw-patched')) {
         console.log('[after-pack] ⚡ extractAppPackage.nsh already patched (idempotent skip).');
       }
     }

@@ -61,5 +61,19 @@
         "notRunning": "ゲートウェイが停止中",
         "notRunningDesc": "この機能を使用するには OpenClaw ゲートウェイが実行されている必要があります。自動的に起動するか、設定から起動できます。",
         "warning": "ゲートウェイが停止中です。"
+    },
+    "auth": {
+        "loginTitle": "OneClaw にログイン",
+        "email": "メールアドレス",
+        "emailPlaceholder": "メールアドレスを入力",
+        "password": "パスワード",
+        "passwordPlaceholder": "パスワードを入力",
+        "login": "ログイン",
+        "loginFailed": "ログインに失敗しました。認証情報を確認してください。",
+        "noAccount": "アカウントをお持ちでないですか？",
+        "signUp": "登録",
+        "logout": "ログアウト",
+        "loggedInAs": "{{email}} としてログイン中",
+        "autoConfiguring": "アカウントから AI プロバイダーを設定中..."
     }
 }
