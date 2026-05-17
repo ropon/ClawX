@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useSkillsStore } from '@/stores/skills';
 import { useGatewayStore } from '@/stores/gateway';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -132,6 +132,7 @@ function SkillDetailDialog({ skill, isOpen, onClose, onToggle, onUninstall, onOp
         className="w-full sm:max-w-[450px] p-0 flex flex-col border-l border-black/10 dark:border-white/10 bg-surface-modal shadow-[0_0_40px_rgba(0,0,0,0.2)]"
         side="right"
       >
+        <SheetTitle className="sr-only">{skill.name}</SheetTitle>
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-8 py-10">
           <div className="flex flex-col items-center mb-8">
@@ -723,6 +724,7 @@ export function Skills() {
           className="w-full sm:max-w-[560px] p-0 flex flex-col border-l border-black/10 dark:border-white/10 bg-surface-modal shadow-[0_0_40px_rgba(0,0,0,0.2)]"
           side="right"
         >
+          <SheetTitle className="sr-only">{t('marketplace.installDialogTitle')}</SheetTitle>
           <div className="px-7 py-6 border-b border-black/10 dark:border-white/10">
             <h2 className="text-2xl font-serif text-foreground font-normal tracking-tight">{t('marketplace.installDialogTitle')}</h2>
             <p className="mt-1 text-meta text-foreground/70">{t('marketplace.installDialogSubtitle')}</p>

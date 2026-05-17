@@ -4,7 +4,7 @@
  *
  * The Chat page uses the inline `ArtifactPanel` instead of this component.
  */
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { FilePreviewBody } from './FilePreviewBody';
 import type { FilePreviewTarget } from './types';
 
@@ -23,6 +23,7 @@ export function FilePreviewOverlay({ file, readOnly = false, onClose }: FilePrev
         side="right"
         className="w-[70vw] max-w-[1100px] sm:max-w-[1100px] p-0 flex flex-col"
       >
+        <SheetTitle className="sr-only">File Preview</SheetTitle>
         {file && <FilePreviewBody file={file} readOnly={readOnly} />}
       </SheetContent>
     </Sheet>
